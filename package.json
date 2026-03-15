@@ -1,0 +1,68 @@
+{
+  "name": "bist-stocks-dashboard",
+  "version": "2.0.0",
+  "description": "BIST Stocks Dashboard - Modular Architecture",
+  "main": "server-refactored.js",
+  "scripts": {
+    "start": "node server-refactored.js",
+    "dev": "node server-refactored.js",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "test": "npm run test:security && npm run test:unit",
+    "test:security": "node scripts/test-security.js",
+    "test:unit": "jest --runInBand",
+    "test:regression": "node scripts/test-regression.js",
+    "test:all": "npm run test:security && npm run test:regression",
+    "deploy": "./scripts/deploy.sh",
+    "backup": "node -e \"const fs=require('fs');const d=new Date().toISOString().replace(/[:.]/g,'-');fs.copyFileSync('users.db','users.db.backup.'+d);console.log('Backup created: users.db.backup.'+d)\"",
+    "backup:full": "node -e \"const fs=require('fs');const d=new Date().toISOString().replace(/[:.]/g,'-');fs.copyFileSync('users.db','users.db.backup.'+d);console.log('Backup created: users.db.backup.'+d)\"",
+    "refactor:check": "node -c server-refactored.js",
+    "rollback": "echo 'Use rollback script in backups/ directory'"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "node-cache": "^5.1.2",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.6",
+    "yahoo-finance2": "^2.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-node": "^11.1.0",
+    "prettier": "^3.3.3",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "bist",
+    "stocks",
+    "dashboard",
+    "finance",
+    "portfolio",
+    "modular",
+    "refactor"
+  ],
+  "author": "BIST Dashboard Team",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bist-stocks-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/bist-stocks-dashboard/issues"
+  },
+  "homepage": "https://github.com/yourusername/bist-stocks-dashboard#readme"
+}

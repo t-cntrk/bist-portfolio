@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Alignment Test</title>
+    <link rel="stylesheet" href="./Portfoy/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            color: #e5e7eb;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Portfolio Table Alignment Test</h1>
+        
+        <h2>Hisse Portföyü Test</h2>
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>HİSSE</th>
+                        <th>MİKTAR</th>
+                        <th>ALIŞ</th>
+                        <th>YATIRIM</th>
+                        <th>GÜNCEL DEĞER</th>
+                        <th>K/Z (₺)</th>
+                        <th>K/Z (%)</th>
+                        <th>İŞLEM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="HİSSE">
+                            <div class="stock-info">
+                                <span class="symbol">SASA</span>
+                                <span class="name">Sasa Polyester</span>
+                            </div>
+                        </td>
+                        <td data-label="MİKTAR">33</td>
+                        <td data-label="ALIŞ">33,00 ₺</td>
+                        <td data-label="YATIRIM">1.089,00 ₺</td>
+                        <td data-label="GÜNCEL DEĞER">102,96 ₺</td>
+                        <td data-label="K/Z (₺)" class="loss">-986,04 ₺</td>
+                        <td data-label="K/Z (%)" class="loss">-90.55%</td>
+                        <td data-label="İŞLEM">
+                            <button class="btn-action delete-portfolio-btn" title="Sil">
+                                <i class="fas fa-times">×</i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <h2>Döviz Portföyü Test</h2>
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>DÖVİZ</th>
+                        <th>MİKTAR</th>
+                        <th>ALIŞ</th>
+                        <th>GÜNCEL FİYAT</th>
+                        <th>K/Z</th>
+                        <th>İŞLEM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="DÖVİZ">
+                            <div class="stock-info">
+                                <span class="symbol">USD/TRY</span>
+                                <span class="name">Amerikan Doları</span>
+                            </div>
+                        </td>
+                        <td data-label="MİKTAR">44</td>
+                        <td data-label="ALIŞ">44.0000</td>
+                        <td data-label="GÜNCEL FİYAT">40.6206</td>
+                        <td data-label="K/Z" class="loss">-148.6936 (-7.68%)</td>
+                        <td data-label="İŞLEM">
+                            <button class="btn-action delete-portfolio-btn" title="Sil">
+                                <i class="fas fa-times">×</i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="test-result">
+            <strong>✅ Test Sonucu:</strong> Eğer yukarıdaki tablolarda veriler doğru sütunların altında görünüyorsa, alignment sorunu çözülmüştür.
+        </div>
+    </div>
+</body>
+</html> 

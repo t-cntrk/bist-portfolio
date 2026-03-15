@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIST Stocks Dashboard</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+    <!-- <style> ve <script> blokları kaldırıldı, gerekli referanslar eklendi -->
+    <link rel="stylesheet" href="./style.css?v=20240823&t=1754394584573&nocache=true&force=1&timestamp=20240823&modern=1&table=1&design=1&currency=1&fix=1&strict=1&extreme=1&nuclear=1&simple=1">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+</head>
+<body>
+    
+    <!-- LOGIN OVERLAY START -->
+    <div id="loginOverlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <div class="background-animation"></div>
+        <div class="floating-elements">
+            <div class="floating-element" style="left: 10%; animation-delay: 0s;">₺</div>
+            <div class="floating-element" style="left: 20%; animation-delay: 3s;">$</div>
+            <div class="floating-element" style="left: 30%; animation-delay: 6s;">€</div>
+            <div class="floating-element" style="left: 40%; animation-delay: 9s;">₺</div>
+            <div class="floating-element" style="left: 50%; animation-delay: 12s;">$</div>
+            <div class="floating-element" style="left: 60%; animation-delay: 2s;">€</div>
+            <div class="floating-element" style="left: 70%; animation-delay: 5s;">₺</div>
+            <div class="floating-element" style="left: 80%; animation-delay: 8s;">$</div>
+            <div class="floating-element" style="left: 90%; animation-delay: 11s;">€</div>
+        </div>
+        <div class="login-container" style="position:relative;z-index:2;min-width:320px;max-width:400px;width:100%;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 45px rgba(0,0,0,0.3);padding:40px;">
+            <div class="logo-section" style="text-align:center;margin-bottom:30px;">
+                <div class="logo-icon" style="position:relative;display:flex;align-items:center;justify-content:center;width:50px;height:50px;background:linear-gradient(45deg,#22c55e,#3b82f6);border-radius:12px;animation:pulse 2s infinite;margin:0 auto 15px auto;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="28" height="28" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+                        <path d="M3 18v-6l9-9 9 9v6h-6v-4h-6v4H3z"/>
+                    </svg>
+                </div>
+                <div class="logo" data-i18n="login.title" style="font-size:28px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:-0.5px;text-align:center;display:block;width:100%;">Borsa Portal</div>
+                <div class="subtitle" data-i18n="login.subtitle" style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:25px;text-align:center;">Anlık veriler, akıllı yatırım</div>
+            </div>
+            <form id="loginForm">
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="username" data-i18n="login.usernameLabel" style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;">Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" data-i18n-placeholder="login.usernamePlaceholder" placeholder="Kullanıcı adınızı girin" required style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="password" data-i18n="login.passwordLabel" style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;">Şifre</label>
+                    <input type="password" id="password" name="password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="Şifrenizi girin" required style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </div>
+                <button type="submit" class="login-btn" data-i18n="login.submit" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;border-radius:10px;color:white;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;position:relative;overflow:hidden;">Giriş Yap</button>
+            </form>
+            <div style="text-align:right;margin-top:10px;">
+                <a href="#" id="forgotPasswordLink" data-i18n="login.forgot" style="color:#3b82f6;text-decoration:none;font-size:13px;">Şifremi Unuttum?</a>
+            </div>
+            <div id="emailVerificationNotice" style="display:none;margin-top:15px;padding:12px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;text-align:center;">
+                <p data-i18n="login.verifyNotice" style="margin:0 0 10px 0;color:#ffc107;font-size:14px;">📧 E-postanızı doğrulamanız gerekiyor</p>
+                <button id="resendVerificationBtn" data-i18n="login.resend" style="background:linear-gradient(135deg,#ffc107,#ff9800);color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;">Yeniden Gönder</button>
+            </div>
+            <div class="divider" data-i18n="login.or" style="text-align:center;margin:25px 0;color:rgba(255,255,255,0.5);font-size:14px;position:relative;">veya</div>
+            <div class="register-link" style="text-align:center;margin-top:20px;">
+                <a href="#" id="registerLink" data-i18n="login.create" style="color:#3b82f6;text-decoration:none;font-weight:500;transition:color 0.3s ease;">Hesap oluştur</a>
+            </div>
+        </div>
+        <div class="market-ticker" style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:20px;color:rgba(255,255,255,0.6);font-size:12px;z-index:5;">
+            <div class="ticker-item" style="display:flex;align-items:center;gap:5px;">
+                <span data-i18n="ticker.bist100">BIST100</span>
+                <span class="ticker-value" id="bist100Ticker" style="font-weight:600;color:#22c55e;">-</span>
+            </div>
+            <div class="ticker-item" style="display:flex;align-items:center;gap:5px;">
+                <span data-i18n="ticker.usdtry">USD/TRY</span>
+                <span class="ticker-value" id="usdtryTicker" style="font-weight:600;color:#22c55e;">-</span>
+            </div>
+            <div class="ticker-item" style="display:flex;align-items:center;gap:5px;">
+                <span data-i18n="ticker.gold">GOLD</span>
+                <span class="ticker-value" id="goldTicker" style="font-weight:600;color:#22c55e;">-</span>
+            </div>
+        </div>
+    </div>
+    <!-- LOGIN OVERLAY END -->
+
+    <!-- FORGOT PASSWORD MODAL START -->
+    <div id="forgotPasswordModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+        <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.13);box-shadow:0 25px 45px rgba(0,0,0,0.25);padding:38px 32px 24px 32px;min-width:320px;max-width:95vw;position:relative;display:flex;flex-direction:column;align-items:center;">
+            <div style='position:absolute;top:12px;right:12px;display:flex;gap:4px;z-index:1100;'>
+                <button id="closeForgotModalBtn" style="background:transparent;border:none;box-shadow:none;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color 0.2s;">
+                    <span style="font-size:1.1em;color:#e57373;transition:color 0.2s;">&#10005;</span>
+                </button>
+            </div>
+            <h3 data-i18n="forgot.title" style="margin-top:0;margin-bottom:22px;text-align:center;font-size:1.35em;font-weight:700;color:#fff;letter-spacing:-0.5px;">Şifremi Unuttum</h3>
+            <div style="display:flex;flex-direction:column;gap:18px;width:100%;max-width:320px;">
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="forgot.emailLabel">E-posta Adresi</span>
+                    <input id="forgotEmail" type="email" placeholder="ornek@email.com" style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+            </div>
+            <div style="text-align:center;margin-top:24px;width:100%;">
+                <button id="forgotSubmitBtn" data-i18n="forgot.submit" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;border-radius:10px;color:white;font-size:16px;font-weight:600;cursor:pointer;">Şifre Sıfırlama Bağlantısı Gönder</button>
+            </div>
+            <div id="forgotResult" style="margin-top:18px;text-align:center;font-size:1.1em;color:#388e3c;display:none;"></div>
+        </div>
+    </div>
+    <!-- FORGOT PASSWORD MODAL END -->
+
+    <div class="background-animation"></div>
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="logo" style="display:flex;align-items:center;gap:12px;">
+                <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:linear-gradient(45deg,#22c55e,#3b82f6);border-radius:12px;animation:pulse 2s infinite;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+                        <path d="M3 18v-6l9-9 9 9v6h-6v-4h-6v4H3z"/>
+                    </svg>
+                </div>
+                <div class="logo-text" style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;height:40px;display:flex;align-items:center;line-height:40px;">Borsa Portal</div>
+            </div>
+            <div class="user-section" style="display:flex;align-items:center;gap:10px;">
+                <div class="lang-toggle" id="langToggle" style="display:none;position:relative;right:auto;top:auto;">
+                    <button id="langBtn" title="Change language" aria-label="Change language">
+                        <span class="lang-icon">🌐</span>
+                    </button>
+                </div>
+                <button id="profileBtn" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;cursor:pointer;padding:0;">
+                    <div class="user-avatar">TU</div>
+                    <span id="profileUsernameDisplay" style="color:#fff;font-weight:600;font-size:16px;"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <h1 class="dashboard-title"><span class="title-primary">BIST Stocks</span> <span class="title-accent">Dashboard</span></h1>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Durum</div>
+                <div class="stat-value" id="statusValue">Hazır</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Son güncelleme</div>
+                <div class="stat-value" id="lastUpdate">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Sonraki güncelleme</div>
+                <div class="stat-value" id="nextUpdate">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">API Kullanımı</div>
+                <div class="stat-value" id="apiUsage">0/60</div>
+            </div>
+        </div>
+
+        <div class="refresh-section">
+            <button id="refreshBtn" class="refresh-btn">
+                <span id="btnText">Yenile</span>
+            </button>
+            <button id="testChartBtn" style="background:#3b82f6;color:white;border:none;padding:8px 16px;border-radius:6px;margin-left:10px;cursor:pointer;" onclick="testChartFunctionality()">
+                Test Chart
+            </button>
+        </div>
+
+        <div class="progress-container" id="progressBar" style="display:none;">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="stocks-container">
+            <div class="sorting-controls">
+                <div class="sort-dropdown">
+                    <button class="sort-dropdown-btn" id="sortDropdownBtn" data-i18n="sort.label">
+                        <span class="sort-icon">↓↑</span>
+                        <span class="sort-text">Sırala</span>
+                        <span class="sort-arrow">▼</span>
+                    </button>
+                    <div class="sort-dropdown-menu" id="sortDropdownMenu">
+                        <div class="sort-option" data-sort="default" data-i18n="sort.default">
+                            <span class="option-text">Varsayılan</span>
+                        </div>
+                        <div class="sort-option" data-sort="gainers" data-i18n="sort.gainers">
+                            <span class="option-text">En Çok Kazanan</span>
+                        </div>
+                        <div class="sort-option" data-sort="losers" data-i18n="sort.losers">
+                            <span class="option-text">En Çok Kaybeden</span>
+                        </div>
+                        <div class="sort-option" data-sort="price" data-i18n="sort.price">
+                            <span class="option-text">Fiyata Göre</span>
+                        </div>
+                        <div class="sort-option" data-sort="volume" data-i18n="sort.volume">
+                            <span class="option-text">En Yüksek Hacim</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <table class="stocks-table">
+                <colgroup>
+                    <col style="width: 220px;"> <!-- Symbol -->
+                    <col style="width: 130px;"> <!-- Güncel Fiyat -->
+                    <col style="min-width: 140px;"> <!-- Önceki Kapanış -->
+                    <col style="min-width: 140px;"> <!-- Değişim -->
+                    <col style="min-width: 140px;"> <!-- Değişim % -->
+                    <col style="min-width: 140px;"> <!-- Hacim -->
+                    <col style="width: 88px;"> <!-- Grafik -->
+                    <col style="width: 88px;"> <!-- Portföy -->
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Güncel Fiyat</th>
+                        <th>Önceki Kapanış</th>
+                        <th>Değişim</th>
+                        <th>Değişim %</th>
+                        <th>Hacim</th>
+                        <th>Grafik</th>
+                        <th>Portföy</th>
+                    </tr>
+                </thead>
+                <tbody id="stocksData">
+                    <!-- JS ile doldurulacak -->
+                </tbody>
+            </table>
+        </div>
+
+
+        <!-- Döviz Tablosu -->
+        <div class="currency-section">
+            <h2 class="section-title">Döviz Kurları</h2>
+            <div class="stocks-container">
+                <table class="stocks-table">
+                    <colgroup>
+                        <col style="width: 220px;"> <!-- Döviz -->
+                        <col style="width: 130px;"> <!-- Güncel Fiyat -->
+                        <col style="width: 140px;"> <!-- Değişim -->
+                        <col style="width: 140px;"> <!-- Değişim % -->
+                        <col style="width: 88px;"> <!-- Portföy -->
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Döviz</th>
+                            <th>Güncel Fiyat</th>
+                            <th>Değişim</th>
+                            <th>Değişim %</th>
+                            <th>Portföy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="currencyData">
+                        <tr>
+                            <td>
+                                <div class="currency-info">
+                                    <div class="currency-flag">🇺🇸</div>
+                                    <div class="currency-details">
+                                        <div class="currency-symbol">USD/TRY</div>
+                                        <div class="currency-name" data-i18n="currency.usd">Amerikan Doları</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="price-cell usd-price">-</td>
+                            <td class="usd-change">-</td>
+                            <td class="usd-change-percent">-</td>
+                            <td>
+                                <button class="add-portfolio-btn currency-add-btn" data-fxname="USD/TRY">+</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="currency-info">
+                                    <div class="currency-flag">🇪🇺</div>
+                                    <div class="currency-details">
+                                        <div class="currency-symbol">EUR/TRY</div>
+                                        <div class="currency-name" data-i18n="currency.eur">Euro</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="price-cell eur-price">-</td>
+                            <td class="eur-change">-</td>
+                            <td class="eur-change-percent">-</td>
+                            <td>
+                                <button class="add-portfolio-btn currency-add-btn" data-fxname="EUR/TRY">+</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="currency-info">
+                                    <div class="currency-flag">🥇</div>
+                                    <div class="currency-details">
+                                        <div class="currency-symbol">XAU/USD</div>
+                                        <div class="currency-name" data-i18n="currency.goldOunce">Altın (Ons)</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="price-cell ons-price">-</td>
+                            <td class="ons-change">-</td>
+                            <td class="ons-change-percent">-</td>
+                            <td>
+                                <button class="add-portfolio-btn currency-add-btn" data-fxname="XAU/USD">+</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="currency-info">
+                                    <div class="currency-flag">💎</div>
+                                    <div class="currency-details">
+                                        <div class="currency-symbol">XAU/TRY</div>
+                                        <div class="currency-name" data-i18n="currency.goldGram">Gram Altın</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="price-cell gram-price">-</td>
+                            <td class="gram-change">-</td>
+                            <td class="gram-change-percent">-</td>
+                            <td>
+                                <button class="add-portfolio-btn currency-add-btn" data-fxname="XAU/TRY">+</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BACKUP: ESKİ PORTFÖY BÖLÜMÜ - YENİ TASARIMA GEÇİŞ İÇİN KORUNUYOR -->
+        <div class="portfolio-container" style="margin-top:32px; display: none;">
+            <!-- HİSSE PORTFÖYÜ KARTI -->
+            <div class="dashboard-card portfolio-card">
+                <div class="card-header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                                <path d="M3 18v-6l9-9 9 9v6h-6v-4h-6v4H3z"/>
+                            </svg>
+                        </div>
+                        <div class="header-text">
+                            <h2>Hisse Portföyüm</h2>
+                            <span class="last-update">Son güncelleme: <span id="lastUpdateTime">-</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="portfolio-table" class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>HISSE</th>
+                                <th>MIKTAR</th>
+                                <th>ALIŞ</th>
+                                <th>YATIRIM</th>
+                                <th>GÜNCEL DEĞER</th>
+                                <th>K/Z (₺)</th>
+                                <th>K/Z (%)</th>
+                                <th>İŞLEM</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockPortfolioBody">
+                            <!-- JS ile doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="portfolio-summary">
+                    <div class="summary-item">
+                        <span>Toplam Yatırım:</span>
+                        <strong id="totalInvestment">-</strong>
+                    </div>
+                    <div class="summary-item profit" id="totalProfit">
+                        <span>Toplam Kar:</span>
+                        <strong>-</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DÖVİZ PORTFÖYÜ KARTI — eski konumdan taşındı, yeni tasarımda gösteriliyor -->
+
+            <!-- YENİLE BUTONU - Giriş ekranı buton stiliyle -->
+            <div class="button-container">
+                <button id="refreshPortfolioBtn" class="gradient-btn">
+                    <span class="btn-text">Yenile</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- YENİ PORTFÖY TASARIMI - BİRLEŞİK TABLO -->
+        <div class="new-portfolio-container">
+            <!-- Birleşik Portföy Tablosu -->
+            <div class="new-unified-portfolio">
+                <div class="new-portfolio-header">
+                    <div class="new-portfolio-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 18v-6l9-9 9 9v6h-6v-4h-6v4H3z"/>
+                        </svg>
+                        Portföyüm
+                    </div>
+                    <div class="new-portfolio-update"><span data-i18n="dash.lastUpdate">Son güncelleme</span>: <span id="newLastUpdateTime">-</span></div>
+                </div>
+                
+                <!-- Portföy Özet Kartları - Portföyüm yazısının altında -->
+                <div class="new-portfolio-summary">
+                    <div class="new-summary-card" style="--card-index: 0;">
+                        <div class="new-summary-label" data-i18n="summary.totalInvestment">Toplam Yatırım</div>
+                        <div class="new-summary-value" id="newTotalInvestment">-</div>
+                    </div>
+                    <div class="new-summary-card" style="--card-index: 1;">
+                        <div class="new-summary-label" data-i18n="summary.currentValue">Güncel Değer</div>
+                        <div class="new-summary-value" id="newCurrentValue">-</div>
+                    </div>
+                    <div class="new-summary-card" id="newTotalProfitCard" style="--card-index: 2;">
+                        <div class="new-summary-label" data-i18n="summary.totalPnL">Toplam Kar/Zarar</div>
+                        <div class="new-summary-value" id="newTotalProfit">-</div>
+                    </div>
+                    <div class="new-summary-card" id="newTotalProfitPercentCard" style="--card-index: 3;">
+                        <div class="new-summary-label" data-i18n="summary.pnlPct">Kar/Zarar %</div>
+                        <div class="new-summary-value" id="newTotalProfitPercent">-</div>
+                    </div>
+                </div>
+                
+                <table class="new-portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>Varlık</th>
+                            <th>Miktar</th>
+                            <th>Alış Fiyatı</th>
+                            <th>Toplam Yatırım (₺)</th>
+                            <th>Güncel Değer (₺)</th>
+                            <th>Kar/Zarar (₺)</th>
+                            <th>Kar/Zarar (%)</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="newUnifiedPortfolioBody">
+                        <!-- JS ile doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- YENİLE BUTONU -->
+            <div class="button-container">
+                <button id="newRefreshPortfolioBtn" class="gradient-btn">
+                    <span class="btn-text">Yenile</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- DÖVİZ PORTFÖYÜ KARTI — yeni tasarım bölümüne taşındı -->
+        <div class="new-portfolio-container" id="fxPortfolioCard" style="display: none;">
+            <div class="new-unified-portfolio">
+                <div class="new-portfolio-header">
+                    <div class="new-portfolio-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        Döviz Portföyüm
+                    </div>
+                </div>
+                <table class="new-portfolio-table" id="fx-portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>DÖVİZ</th>
+                            <th>MIKTAR</th>
+                            <th>ALIŞ FİYATI</th>
+                            <th>TOPLAM YATIRIM</th>
+                            <th>GÜNCEL DEĞER</th>
+                            <th>KAR/ZARAR (₺)</th>
+                            <th>KAR/ZARAR (%)</th>
+                            <th>İŞLEM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fxPortfolioBody">
+                        <!-- JS ile doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Modern Grafik Modalı ve Arka Planı -->
+    <div class="chart-modal" id="chartModal" style="display: none;">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <span id="modalSymbol"></span>
+                    <div class="chart-range-selector">
+                        <select id="chartRange" class="modern-select">
+                            <option value="1w" data-i18n="chart.1w">1 Hafta</option>
+                            <option value="1m" data-i18n="chart.1m" selected>1 Ay</option>
+                            <option value="1y" data-i18n="chart.1y">1 Yıl</option>
+                            <option value="10y" data-i18n="chart.10y">10 Yıl</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-header-buttons">
+                    <button class="chart-fullscreen" id="chartFullscreenBtn" title="Tam Ekran">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                        </svg>
+                    </button>
+                    <button class="chart-close" id="closeChartBtn" title="Kapat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-content">
+                <canvas id="stockChart" width="400" height="220"></canvas>
+            </div>
+            <div id="chartErrorMsg" style="color:#ef4444;text-align:center;margin-top:16px;display:none;font-size:14px;font-weight:500;"></div>
+        </div>
+    </div>
+
+    <!-- REGISTER MODAL START -->
+    <div id="registerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+        <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.13);box-shadow:0 25px 45px rgba(0,0,0,0.25);padding:38px 32px 24px 32px;min-width:320px;max-width:95vw;position:relative;display:flex;flex-direction:column;align-items:center;">
+            <div style='position:absolute;top:12px;right:12px;display:flex;gap:4px;z-index:1100;'>
+                <button id="closeRegisterModalBtn" style="background:transparent;border:none;box-shadow:none;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color 0.2s;">
+                    <span style="font-size:1.1em;color:#e57373;transition:color 0.2s;">&#10005;</span>
+                </button>
+            </div>
+            <h3 data-i18n="login.create" style="margin-top:0;margin-bottom:22px;text-align:center;font-size:1.35em;font-weight:700;color:#fff;letter-spacing:-0.5px;">Hesap Oluştur</h3>
+            <form id="registerForm" style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:18px;">
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.firstName">İsim</span>
+                    <input id="registerName" type="text" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.lastName">Soyisim</span>
+                    <input id="registerSurname" type="text" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.email">E-posta</span>
+                    <input id="registerEmail" type="email" required placeholder="ornek@email.com" style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <div id="registerEmailHelp" style="color:#e57373;font-size:12px;display:none;margin-top:-10px;margin-bottom:4px;">Geçerli bir e-posta adresi giriniz.</div>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.birthdate">Doğum Tarihi</span>
+                    <input id="registerBirthdate" type="date" required min="1900-01-01" max="2024-12-31" style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.username">Kullanıcı Adı</span>
+                    <input id="registerUsername" type="text" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.password">Şifre</span>
+                    <input id="registerPassword" type="password" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.passwordConfirm">Şifrenizi Tekrar Giriniz</span>
+                    <input id="registerPasswordConfirm" type="password" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                </label>
+                <div id="registerPasswordHelp" data-i18n="register.passwordHint" style="color:#e57373;font-size:12px;display:none;margin-top:-10px;margin-bottom:4px;">Şifre en az 8 karakter, büyük harf, küçük harf, rakam ve özel karakter içermelidir.</div>
+                <div id="registerPasswordConfirmHelp" data-i18n="register.passwordMismatch" style="color:#e57373;font-size:12px;display:none;margin-top:-10px;margin-bottom:4px;">Şifreler eşleşmiyor.</div>
+                <button type="submit" data-i18n="register.submit" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;border-radius:10px;color:white;font-size:16px;font-weight:600;cursor:pointer;">Kaydol</button>
+            </form>
+            <div id="registerResult" style="margin-top:18px;text-align:center;font-size:1.1em;color:#388e3c;display:none;"></div>
+        </div>
+    </div>
+    <!-- REGISTER MODAL END -->
+
+    <!-- PROFIL MODAL BAŞLANGIÇ -->
+    <div id="profileModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:4000;background:rgba(15,15,35,0.85);backdrop-filter:blur(10px);align-items:center;justify-content:center;">
+      <div style="background:#20223a;border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:0 0 32px 0;min-width:340px;max-width:95vw;display:flex;flex-direction:column;align-items:center;position:relative;">
+        <button id="closeProfileModalBtn" style="position:absolute;top:18px;right:18px;background:transparent;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:1.1em;color:#b0b3c6;cursor:pointer;transition:background 0.2s;z-index:2;"><span style="pointer-events:none;">&#10005;</span></button>
+        <div style="display:flex;flex-direction:column;align-items:center;width:100%;padding-top:36px;">
+          <div class="user-avatar" style="width:72px;height:72px;font-size:2.2em;background:linear-gradient(45deg,#3b82f6,#22c55e);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,0.10);margin-bottom:18px;">TU</div>
+          <div style="font-size:1.45em;font-weight:700;color:#fff;">Hesap Bilgileri</div>
+          <div style="font-size:1em;color:#b0b3c6;margin-top:4px;margin-bottom:24px;">Yatırım hesabınızın detayları</div>
+        </div>
+        <div style="width:90%;display:flex;flex-direction:column;gap:18px;">
+          <div style="background:#23243a;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.10);display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:0.93em;color:#b0b3c6;font-weight:500;letter-spacing:0.5px;">KULLANICI ADI</div>
+            <div id="profileUsernameDisplay2" style="font-size:1.13em;color:#fff;font-weight:600;">kadikoybogasi</div>
+          </div>
+          <div style="background:#23243a;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.10);display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:0.93em;color:#b0b3c6;font-weight:500;letter-spacing:0.5px;">İSİM</div>
+            <div id="profileNameDisplay" style="font-size:1.13em;color:#fff;font-weight:600;">Kadıköy</div>
+          </div>
+          <div style="background:#23243a;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.10);display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:0.93em;color:#b0b3c6;font-weight:500;letter-spacing:0.5px;">SOYİSİM</div>
+            <div id="profileSurnameDisplay" style="font-size:1.13em;color:#fff;font-weight:600;">Boğası</div>
+          </div>
+          <div style="background:#23243a;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.10);display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:0.93em;color:#b0b3c6;font-weight:500;letter-spacing:0.5px;">DOĞUM TARİHİ</div>
+            <div id="profileBirthdateDisplay" style="font-size:1.13em;color:#fff;font-weight:600;">1907-05-03</div>
+          </div>
+        </div>
+        <!-- Ayarlar butonu sağ altta -->
+        <button id="profileSettingsBtn" style="position:absolute;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:linear-gradient(45deg,#3b82f6,#22c55e);background-size:200% 200%;background-position:0 0;border:none;box-shadow:0 2px 12px rgba(59,130,246,0.10);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-position 0.4s cubic-bezier(.4,1.4,.6,1);"><span style="font-size:1.7em;color:#fff;">&#9881;</span></button>
+        <!-- Ayarlar açılır menüsü -->
+        <div id="profileSettingsMenu" style="display:none;flex-direction:column;gap:0;width:180px;position:absolute;bottom:74px;right:24px;background:#23243a;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.18);padding:6px 0;z-index:10;border:1px solid #23243a;">
+          <button id="profileChangePasswordBtn" style="width:100%;padding:10px 0;background:transparent;border:none;color:#3b82f6;font-size:15px;font-weight:500;cursor:pointer;text-align:left;padding-left:18px;transition:background 0.2s;">Şifre Değiştir</button>
+          <button id="profileLogoutBtn" style="width:100%;padding:10px 0;background:transparent;border:none;color:#b0b3c6;font-size:15px;font-weight:500;cursor:pointer;text-align:left;padding-left:18px;transition:background 0.2s;">Çıkış Yap</button>
+          <button id="profileDeleteBtn" style="width:100%;padding:10px 0;background:transparent;border:none;color:#ef4444;font-size:15px;font-weight:500;cursor:pointer;text-align:left;padding-left:18px;transition:background 0.2s;">Hesabı Sil</button>
+        </div>
+      </div>
+    </div>
+    <!-- PROFIL MODAL SONU -->
+
+    <!-- ŞİFRE DEĞİŞTİRME MODALI -->
+    <div id="changePasswordModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;backdrop-filter:blur(8px);">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border-radius:16px;padding:32px;width:400px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid #23243a;">
+        <button id="closeChangePasswordModalBtn" style="position:absolute;top:16px;right:16px;background:transparent;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:1.1em;color:#b0b3c6;cursor:pointer;transition:background 0.2s;z-index:2;"><span style="pointer-events:none;">&#10005;</span></button>
+        
+        <div style="text-align:center;margin-bottom:24px;">
+          <h2 style="color:#fff;font-size:1.5em;margin:0 0 8px 0;">Şifre Değiştir</h2>
+          <p style="color:#b0b3c6;margin:0;font-size:0.9em;">Güvenlik için e-posta doğrulaması gereklidir</p>
+        </div>
+
+        <div id="passwordChangeStep1" style="display:block;">
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">E-posta Adresiniz</label>
+            <input type="email" id="passwordChangeEmail" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="E-posta adresinizi girin" readonly>
+          </div>
+          <button id="requestPasswordChangeBtn" style="width:100%;padding:12px;background:linear-gradient(45deg,#3b82f6,#22c55e);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:transform 0.2s;">Doğrulama E-postası Gönder</button>
+          <div id="passwordChangeResult1" style="margin-top:12px;font-size:0.9em;display:none;"></div>
+        </div>
+
+        <div id="passwordChangeStep2" style="display:none;">
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">Doğrulama Kodu</label>
+            <input type="text" id="passwordChangeToken" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="E-postanızdaki doğrulama kodunu girin">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">Yeni Şifre</label>
+            <input type="password" id="newPassword" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="Yeni şifrenizi girin">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">Yeni Şifre (Tekrar)</label>
+            <input type="password" id="newPasswordConfirm" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="Yeni şifrenizi tekrar girin">
+          </div>
+          <button id="verifyPasswordChangeBtn" style="width:100%;padding:12px;background:linear-gradient(45deg,#3b82f6,#22c55e);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:transform 0.2s;">Şifreyi Değiştir</button>
+          <div id="passwordChangeResult2" style="margin-top:12px;font-size:0.9em;display:none;"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ŞİFRE DEĞİŞTİRME MODALI SONU -->
+
+    <!-- HESAP SİLME MODALI -->
+    <div id="deleteAccountModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;backdrop-filter:blur(8px);">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border-radius:16px;padding:32px;width:400px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid #23243a;">
+        <button id="closeDeleteAccountModalBtn" style="position:absolute;top:16px;right:16px;background:transparent;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:1.1em;color:#b0b3c6;cursor:pointer;transition:background 0.2s;z-index:2;"><span style="pointer-events:none;">&#10005;</span></button>
+        
+        <div style="text-align:center;margin-bottom:24px;">
+          <h2 style="color:#ef4444;font-size:1.5em;margin:0 0 8px 0;">⚠️ Hesap Sil</h2>
+          <p style="color:#b0b3c6;margin:0;font-size:0.9em;">Güvenlik için e-posta doğrulaması gereklidir</p>
+        </div>
+
+        <div id="deleteAccountStep1" style="display:block;">
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">E-posta Adresiniz</label>
+            <input type="email" id="deleteAccountEmail" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="E-posta adresinizi girin" readonly>
+          </div>
+          <div style="background:#2d1b1b;border:1px solid #ef4444;border-radius:8px;padding:12px;margin-bottom:20px;">
+            <p style="color:#ef4444;font-size:0.9em;margin:0;font-weight:600;">⚠️ DİKKAT!</p>
+            <p style="color:#b0b3c6;font-size:0.8em;margin:4px 0 0 0;">Bu işlem geri alınamaz! Tüm verileriniz kalıcı olarak silinecektir.</p>
+          </div>
+          <button id="requestAccountDeletionBtn" style="width:100%;padding:12px;background:linear-gradient(45deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:transform 0.2s;">Doğrulama E-postası Gönder</button>
+          <div id="deleteAccountResult1" style="margin-top:12px;font-size:0.9em;display:none;"></div>
+        </div>
+
+        <div id="deleteAccountStep2" style="display:none;">
+          <div style="margin-bottom:20px;">
+            <label style="display:block;color:#b0b3c6;font-size:0.9em;margin-bottom:8px;">Doğrulama Kodu</label>
+            <input type="text" id="deleteAccountToken" style="width:100%;padding:12px;background:#23243a;border:1px solid #3a3a5c;border-radius:8px;color:#fff;font-size:1em;box-sizing:border-box;" placeholder="E-postanızdaki doğrulama kodunu girin">
+          </div>
+          <div style="background:#2d1b1b;border:1px solid #ef4444;border-radius:8px;padding:12px;margin-bottom:20px;">
+            <p style="color:#ef4444;font-size:0.9em;margin:0;font-weight:600;">⚠️ SON UYARI!</p>
+            <p style="color:#b0b3c6;font-size:0.8em;margin:4px 0 0 0;">Hesabınız ve tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz!</p>
+          </div>
+          <button id="verifyAccountDeletionBtn" style="width:100%;padding:12px;background:linear-gradient(45deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:transform 0.2s;">Hesabı Kalıcı Olarak Sil</button>
+          <div id="deleteAccountResult2" style="margin-top:12px;font-size:0.9em;display:none;"></div>
+        </div>
+      </div>
+    </div>
+    <!-- HESAP SİLME MODALI SONU -->
+
+    <!-- Eski script bloğu kaldırıldı, modüler yapı için yeni script eklendi -->
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./app-init.js"></script>
+</body>
+</html>

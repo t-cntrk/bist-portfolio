@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-posta Doğrulama - Borsa Portal</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        /* Reset styles for email clients */
+        body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        
+        /* Outlook-specific fixes */
+        .ReadMsgBody { width: 100%; }
+        .ExternalClass { width: 100%; }
+        .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100%; }
+        
+        /* MSO specific styles */
+        .mso-fix { mso-line-height-rule: exactly; }
+        .mso-hide { mso-hide: all; }
+        
+        /* Responsive design */
+        @media only screen and (max-width: 600px) {
+            .responsive-table {
+                width: 100% !important;
+            }
+            .mobile-padding {
+                padding: 20px 15px !important;
+            }
+            .mobile-text {
+                font-size: 16px !important;
+                line-height: 24px !important;
+            }
+            .mobile-button {
+                width: 100% !important;
+                max-width: 280px !important;
+            }
+        }
+        
+        /* Dark theme styles */
+        .dark-bg {
+            background: linear-gradient(135deg, #0f0f23, #1a1a2e) !important;
+        }
+        
+        /* Button styles */
+        .verify-button {
+            background: linear-gradient(45deg, #22c55e, #3b82f6) !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
+            display: inline-block !important;
+            font-weight: 600 !important;
+            font-size: 16px !important;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+    <!--[if mso]>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+    <td align="center" style="background-color: #f4f4f4;">
+    <![endif]-->
+    
+    <!-- Main Container -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #f4f4f4;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                
+                <!-- Email Content Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background: linear-gradient(135deg, #0f0f23, #1a1a2e); border-radius: 12px; overflow: hidden;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td class="mobile-padding mso-fix" style="padding: 40px 30px 20px 30px; text-align: center;">
+                            <!--[if mso]>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                            <td align="center">
+                            <![endif]-->
+                            
+                            <h1 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.2; mso-line-height-rule: exactly;">
+                                📧 E-posta Doğrulama
+                            </h1>
+                            
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin: 0; line-height: 1.5; mso-line-height-rule: exactly;">
+                                Borsa Portal hesabınızı doğrulamak için e-postanızı onaylayın.
+                            </p>
+                            
+                            <!--[if mso]>
+                            </td>
+                            </tr>
+                            </table>
+                            <![endif]-->
+                        </td>
+                    </tr>
+                    
+                    <!-- Content Section -->
+                    <tr>
+                        <td class="mobile-padding mso-fix" style="padding: 20px 30px 30px 30px; text-align: center;">
+                            <!--[if mso]>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                            <td align="center">
+                            <![endif]-->
+                            
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin: 0 0 25px 0; line-height: 1.5; mso-line-height-rule: exactly;">
+                                Hesabınızı aktifleştirmek için aşağıdaki butona tıklayın:
+                            </p>
+                            
+                            <!-- Verify Button with Enhanced VML -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td align="center">
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" 
+                                                     style="height:48px;v-text-anchor:middle;width:220px;" arcsize="10%" stroke="f" fillcolor="#22c55e">
+                                        <w:anchorlock/>
+                                        <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;mso-line-height-rule:exactly;">
+                                        ✅ E-postamı Doğrula
+                                        </center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <a href="{{VERIFICATION_LINK}}" class="verify-button mobile-button" 
+                                           style="background: linear-gradient(45deg, #22c55e, #3b82f6); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; min-width: 200px;">
+                                            ✅ E-postamı Doğrula
+                                        </a>
+                                        <!--<![endif]-->
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!--[if mso]>
+                            </td>
+                            </tr>
+                            </table>
+                            <![endif]-->
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer Section -->
+                    <tr>
+                        <td class="mobile-padding mso-fix" style="padding: 20px 30px 40px 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <!--[if mso]>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                            <td align="center">
+                            <![endif]-->
+                            
+                            <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin: 0 0 15px 0; line-height: 1.4; mso-line-height-rule: exactly;">
+                                ⏰ Bu bağlantı <strong>24 saat</strong> geçerlidir.
+                            </p>
+                            
+                            <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0; line-height: 1.4; mso-line-height-rule: exactly;">
+                                Eğer bu hesabı siz oluşturmadıysanız, bu e-postayı görmezden gelebilirsiniz.
+                            </p>
+                            
+                            <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 15px 0 0 0; line-height: 1.4; mso-line-height-rule: exactly;">
+                                Sorularınız için: <a href="mailto:destek@borsaportal.com" style="color: #22c55e; text-decoration: none;">destek@borsaportal.com</a>
+                            </p>
+                            
+                            <!--[if mso]>
+                            </td>
+                            </tr>
+                            </table>
+                            <![endif]-->
+                        </td>
+                    </tr>
+                    
+                </table>
+                
+                <!-- Bottom Spacing -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td style="padding: 20px 0; text-align: center;">
+                            <p style="color: #666666; font-size: 12px; margin: 0; mso-line-height-rule: exactly;">
+                                © 2024 Borsa Portal. Tüm hakları saklıdır.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+            </td>
+        </tr>
+    </table>
+    
+    <!--[if mso]>
+    </td>
+    </tr>
+    </table>
+    <![endif]-->
+</body>
+</html> 

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Alignment Test</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            color: #e5e7eb;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .portfolio-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin: 0;
+        }
+
+        .last-update {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modern-table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.875rem;
+        }
+
+        .modern-table th {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+            font-weight: 600;
+            padding: 16px 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(20px);
+        }
+
+        .modern-table th:first-child {
+            text-align: left;
+            width: 18%;
+            min-width: 120px;
+        }
+
+        .modern-table th:nth-child(2) {
+            width: 12%;
+            min-width: 100px;
+        }
+
+        .modern-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+            color: #e5e7eb;
+            text-align: center;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* CRITICAL FIX: Right-align numerical values for better readability */
+        .modern-table td:nth-child(n+3) {
+            text-align: right !important;
+        }
+
+        /* Keep first two columns left-aligned (stock name and symbol) */
+        .modern-table td:nth-child(1),
+        .modern-table td:nth-child(2) {
+            text-align: left !important;
+        }
+
+        .modern-table td:first-child {
+            text-align: left !important;
+        }
+
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .symbol {
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .name {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .profit {
+            color: #22c55e !important;
+            font-weight: 600;
+        }
+
+        .loss {
+            color: #ef4444 !important;
+            font-weight: 600;
+        }
+
+        .portfolio-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .summary-item span {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .summary-item strong {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .modern-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+            /* CRITICAL FIX: Reduce margin for better spacing */
+            margin-bottom: 1rem;
+        }
+
+        .modern-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .portfolio-card {
+                padding: 16px;
+                margin: 16px 8px;
+                border-radius: 16px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .card-header h2 {
+                font-size: 1.25rem;
+            }
+            
+            .modern-table {
+                display: table;
+                width: 100%;
+                min-width: 900px;
+                font-size: 0.8rem;
+            }
+            
+            .modern-table thead,
+            .modern-table tbody,
+            .modern-table tr {
+                display: table-row-group;
+            }
+            
+            .modern-table tr {
+                display: table-row;
+            }
+            
+            .modern-table td {
+                display: table-cell;
+                padding: 8px 6px;
+                text-align: right;
+            }
+            
+            .modern-table td:first-child {
+                text-align: left;
+            }
+            
+            .modern-table td:last-child {
+                text-align: center;
+            }
+            
+            .modern-table td::before {
+                content: none;
+            }
+            
+            .portfolio-summary {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .modern-btn {
+                width: 100%;
+                max-width: 200px;
+                /* CRITICAL FIX: Reduce margin for mobile */
+                margin-bottom: 0.5rem;
+            }
+            
+            /* CRITICAL FIX: Ensure horizontal scrolling on mobile */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+            }
+            
+            /* CRITICAL FIX: Right-align numerical values on mobile too */
+            .modern-table td:nth-child(n+3) {
+                text-align: right !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="portfolio-card">
+        <div class="card-header">
+            <h2>📊 Hisse Portföyüm</h2>
+            <div class="last-update">Son güncelleme: 17:00:21</div>
+        </div>
+        
+        <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                        <th>HİSSE</th>
+                        <th>MİKTAR</th>
+                                    <th>ALIŞ</th>
+                                    <th>YATIRIM</th>
+                                    <th>GÜNCEL DEĞER</th>
+                                    <th>K/Z (₺)</th>
+                                    <th>K/Z (%)</th>
+                                    <th>İŞLEM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                        <td>
+                                        <div class="stock-info">
+                                <div class="symbol">EGPRO</div>
+                                <div class="name">Ege Profil</div>
+                                        </div>
+                                    </td>
+                        <td>44</td>
+                        <td>44,00 ₺</td>
+                        <td>1.936,00 ₺</td>
+                        <td>944,24 ₺</td>
+                        <td class="loss">-991,76 ₺</td>
+                        <td class="loss">-51.23%</td>
+                        <td>
+                            <button style="background: #ef4444; color: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer;">×</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+        <div class="portfolio-summary">
+            <div class="summary-item">
+                <span>Toplam Yatırım:</span>
+                <strong>1.936,00 ₺</strong>
+                </div>
+            <div class="summary-item loss">
+                <span>Toplam Zarar:</span>
+                <strong>-991,76 ₺ (-51.23%)</strong>
+            </div>
+        </div>
+        
+        <button class="modern-btn">🔄 Yenile</button>
+    </div>
+
+    <div class="portfolio-card">
+                    <div class="card-header">
+            <h2>✅ Döviz Portföyüm</h2>
+                    </div>
+                    
+        <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>DÖVİZ</th>
+                        <th>MİKTAR</th>
+                                    <th>ALIŞ</th>
+                                    <th>GÜNCEL FİYAT</th>
+                                    <th>K/Z</th>
+                                    <th>İŞLEM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                        <td>
+                                        <div class="stock-info">
+                                <div class="symbol">USD/TRY</div>
+                                <div class="name">USD/TRY</div>
+                                        </div>
+                                    </td>
+                        <td>44</td>
+                        <td>44.0000</td>
+                        <td>40.6703</td>
+                        <td class="loss">-146.5068 (-7.57%)</td>
+                        <td>
+                            <button style="background: #ef4444; color: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer;">×</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+        </div>
+    </div>
+
+    <script>
+        // Test the alignment fixes
+        console.log('Portfolio alignment test loaded');
+        
+        // Check if numerical values are right-aligned
+        const numericalCells = document.querySelectorAll('.modern-table td:nth-child(n+3)');
+        numericalCells.forEach(cell => {
+            if (cell.style.textAlign !== 'right') {
+                console.warn('Numerical cell not right-aligned:', cell.textContent);
+            }
+        });
+        
+        // Check if table has horizontal scroll on mobile
+        const tableResponsive = document.querySelector('.table-responsive');
+        if (tableResponsive.scrollWidth > tableResponsive.clientWidth) {
+            console.log('✅ Horizontal scrolling enabled');
+        }
+    </script>
+</body>
+</html> 

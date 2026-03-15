@@ -1,0 +1,4382 @@
+/* BIST Stocks Dashboard orijinal CSS - parça 1 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: #e5e7eb;
+    /* TEST: CSS değişiklikleri çalışıyor mu? */
+}
+
+/* Semantic stocks table styles (alignment preserved with colgroup widths) */
+.stocks-container {
+    background: rgba(32, 35, 56, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.stocks-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    background: rgba(32, 35, 56, 0.95);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.stocks-table th {
+    background: rgba(36, 39, 60, 0.95);
+    color: #b0b3c6;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.stocks-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 12px;
+}
+
+.stocks-table tbody tr {
+    transition: background 0.18s, transform 0.18s;
+}
+
+.stocks-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateX(5px);
+}
+
+.stocks-table .stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stocks-table .symbol {
+    font-weight: 700;
+    font-size: 16px;
+    color: #3b82f6;
+}
+
+.stocks-table .name {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.stocks-table .price-cell {
+    text-align: right !important;
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+}
+
+.stocks-table .volume-cell {
+    text-align: right !important;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Change colors */
+.stocks-table .change-positive {
+    color: #22c55e !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.stocks-table .change-negative {
+    color: #ef4444 !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.stocks-table .neutral {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.stocks-table .chart-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(45deg, #3b82f6, #22c55e);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: white;
+}
+
+.stocks-table .chart-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+.stocks-table .add-portfolio-btn {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.15));
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+    line-height: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.stocks-table .add-portfolio-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.stocks-table .add-portfolio-btn:hover {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.25));
+    color: #ffffff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    border-color: rgba(34, 197, 94, 0.6);
+}
+
+.stocks-table .add-portfolio-btn:hover::before {
+    left: 100%;
+}
+
+/* Remove old div-based styles */
+.table-header,
+.table-row,
+.header-cell {
+    display: none;
+}
+
+.background-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(239, 68, 68, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+    animation: float 20s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(1deg); }
+}
+
+.header {
+    background: rgba(32, 35, 56, 0.95);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    margin: 18px 18px 32px 18px;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.header-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+}
+/* Language toggle */
+.lang-toggle {
+    position: absolute;
+    top: 16px;
+    right: 88px; /* move next to profile avatar */
+    z-index: 10001;
+}
+.lang-toggle button {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.25);
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(34,197,94,0.12));
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #e5e7eb;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    cursor: pointer;
+    transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
+}
+.lang-toggle button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
+.lang-toggle .lang-icon {
+    font-size: 18px; line-height: 1;
+}
+
+/* Sorting controls */
+.sorting-controls {
+    background: rgba(32, 35, 56, 0.95);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Modern Dropdown Design */
+.sort-dropdown {
+    position: relative;
+    display: inline-block;
+    z-index: 9999;
+}
+
+.sort-dropdown-btn {
+    background: linear-gradient(135deg, #3b82f6, #22c55e);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.sort-dropdown-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.sort-dropdown-btn:active {
+    transform: translateY(0);
+}
+
+.sort-icon {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+.sort-text {
+    flex: 1;
+    text-align: center;
+}
+
+.sort-arrow {
+    font-size: 10px;
+    opacity: 0.7;
+    transition: transform 0.3s ease;
+}
+
+.sort-dropdown.active .sort-arrow {
+    transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.sort-dropdown-menu {
+    background: rgba(32, 35, 56, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px 0;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10000;
+    min-width: 200px;
+    display: none;
+    pointer-events: none;
+}
+
+.sort-dropdown.active .sort-dropdown-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    display: block !important;
+    pointer-events: auto !important;
+}
+
+/* Sort Options */
+.sort-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 2px 8px;
+    position: relative;
+}
+
+.sort-option:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateX(4px);
+}
+
+.sort-option.active {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.15));
+    border-left: 3px solid #22c55e;
+}
+
+.sort-option[data-sort="gainers"]:hover {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.sort-option[data-sort="losers"]:hover {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.sort-option[data-sort="alphabetical"]:hover {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.sort-option[data-sort="price"]:hover {
+    background: rgba(168, 85, 247, 0.15);
+}
+
+.sort-option[data-sort="volume"]:hover {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.option-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.option-text {
+    flex: 1;
+    color: #e5e7eb;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.sort-direction {
+    color: #9ca3af;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sorting-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .sort-dropdown {
+        width: 100%;
+    }
+    
+    .sort-dropdown-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .sort-dropdown-menu {
+        left: 0;
+        right: 0;
+        min-width: auto;
+    }
+}
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg,#22c55e,#3b82f6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.10);
+}
+.logo-text {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    line-height: 40px;
+}
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg,#3b82f6,#22c55e);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2em;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.10);
+}
+.user-avatar:hover {
+    transform: scale(1.1);
+}
+
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 18px;
+    background: rgba(255,255,255,0.01);
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    padding: 32px;
+}
+
+.dashboard-title {
+    font-size: 1.9em;
+    font-weight: 800;
+    margin: 6px auto 22px auto;
+    letter-spacing: -0.5px;
+    text-align: center;
+    width: fit-content;
+    padding: 10px 18px;
+    border-radius: 14px;
+    /* Match cards: soft glassy chip */
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(34, 197, 94, 0.07));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 18px rgba(0,0,0,0.22);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+.dashboard-title span.title-primary {
+    color: #e5e7eb;
+}
+.dashboard-title span.title-accent {
+    color: #22c55e;
+}
+
+.section-title {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #22c55e;
+    margin: 32px 0 18px 0;
+    letter-spacing: -0.5px;
+    text-align: left;
+}
+
+.stats-bar {
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    padding: 20px 24px;
+    margin: 18px 0 32px 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
+    transition: background 0.2s, transform 0.2s;
+    min-width: 120px;
+}
+.stat-item:hover {
+    background: rgba(59,130,246,0.08);
+    transform: translateY(-2px);
+}
+.stat-label {
+    font-size: 0.9em;
+    color: #b0b3c6;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.stat-value {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #38bdf8;
+}
+.stat-value.success {
+    color: #22c55e;
+}
+.stat-value.error {
+    color: #ef4444;
+}
+.stat-value.loading {
+    color: #f59e0b;
+}
+.progress-container {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    height: 8px;
+    margin: 18px 0;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.progress-fill {
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    height: 100%;
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px rgba(59,130,246,0.3);
+}
+
+.refresh-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
+}
+
+.refresh-btn, #refreshPortfolioBtn {
+    background: linear-gradient(135deg,#3b82f6,#22c55e);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.refresh-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.refresh-btn:hover::before {
+    left: 100%;
+}
+
+.refresh-btn:hover, #refreshPortfolioBtn:hover {
+    background: linear-gradient(135deg,#22c55e,#3b82f6);
+    transform: scale(1.04);
+}
+
+.stocks-container {
+    background: rgba(32, 35, 56, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.stocks-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    background: rgba(32, 35, 56, 0.95);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.stocks-table th {
+    background: rgba(36, 39, 60, 0.95);
+    color: #b0b3c6;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.stocks-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 12px;
+}
+
+.stocks-table tbody tr {
+    transition: background 0.18s, transform 0.18s;
+}
+
+.stocks-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateX(5px);
+}
+
+.stocks-table .stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stocks-table .symbol {
+    font-weight: 700;
+    font-size: 16px;
+    color: #3b82f6;
+}
+
+.stocks-table .name {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.stocks-table .price-cell {
+    text-align: right !important;
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+}
+
+.stocks-table .volume-cell {
+    text-align: right !important;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.stocks-table .chart-icon {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stocks-table .chart-icon:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: scale(1.05);
+}
+
+/* Remove old div-based styles */
+.table-header,
+.table-row,
+.header-cell {
+    display: none;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.loading::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Parça 1 sonu, devamı için yeni bir parça ekleyeceğim */ 
+
+/* Parça 2: modal, form, currency, progress bar, chart-modal, responsive ve diğer stiller */
+
+/* Modal styles */
+#chartModal > div, #removePortfolioModal > div {
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    border: 1.5px solid rgba(25, 118, 210, 0.10);
+}
+
+/* Form styles */
+.form-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn {
+    background: linear-gradient(135deg, #3b82f6, #22c55e);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Status indicators */
+.status {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.status.success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid #22c55e;
+}
+
+.status.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.status.loading {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+/* Progress bar */
+.progress-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Responsive ve diğer stiller için devamı eklenecek */ 
+
+/* Parça 4: responsive, chart-modal, portfolio, media queries, utility ve özel stiller */
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .stats-bar {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    .main-container {
+        padding: 18px 4vw;
+    }
+    .dashboard-title {
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+    .table-header {
+        padding: 10px 4px;
+    }
+    .table-row, .portfolio-table-row, .currency-table-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        text-align: center;
+        padding: 12px 4px;
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .table-row > div, .portfolio-table-row > div, .currency-table-row > div {
+        padding: 4px 0;
+        width: 100%;
+    }
+    .header-cell {
+        font-size: 13px;
+    }
+    .cell, .symbol-cell, .price-cell {
+        font-size: 13px;
+    }
+    .container, .stocks-container, .currency-container, .form-container, .currency-form-container {
+        border-radius: 12px;
+        padding: 12px 4vw;
+        margin-top: 18px;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+    }
+    .chart-modal .chart-container {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        border-radius: 16px !important;
+        padding: 16px !important;
+        min-width: 320px !important;
+    }
+    .chart-content {
+        padding: 12px !important;
+        min-height: 320px !important;
+        height: 320px !important;
+    }
+    #stockChart, #stockChartCanvas {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 250px !important;
+        display: block !important;
+    }
+    .chart-header {
+        padding: 0 0 16px 0;
+        margin-bottom: 16px;
+    }
+    .chart-title {
+        font-size: 16px;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .chart-fullscreen, .chart-close {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    .modern-select {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    .form-group input, .currency-form-group input {
+        font-size: 15px;
+        padding: 10px 12px;
+    }
+    .btn, .currency-btn {
+        font-size: 15px;
+        padding: 10px 0;
+    }
+    .btn-secondary, .currency-btn-secondary {
+        font-size: 14px;
+    }
+    .portfolio-table-row .cell, .currency-portfolio .cell {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .portfolio-table-row, .currency-portfolio {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px 4px;
+    }
+    .currency-info {
+        gap: 8px;
+    }
+    .currency-flag {
+        font-size: 22px;
+        width: 32px;
+        height: 32px;
+    }
+    .currency-symbol {
+        font-size: 13px;
+    }
+    .currency-name {
+        font-size: 11px;
+    }
+    .remove-portfolio-btn, .delete-portfolio-btn, .currency-remove-portfolio-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+        width: 22px;
+        height: 22px;
+    }
+    .add-portfolio-btn, .currency-add-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 13px;
+    }
+    .progress-container, .currency-progress-container {
+        height: 6px;
+    }
+    .market-ticker {
+        font-size: 10px;
+        gap: 8px;
+        bottom: 10px;
+    }
+    .login-container {
+        min-width: 0;
+        max-width: 98vw;
+        padding: 18px 4vw;
+    }
+    #registerModal > div, #forgotPasswordModal > div {
+        min-width: 0;
+        max-width: 98vw;
+        padding: 18px 4vw;
+    }
+    /* Modal overlay click-to-close UX */
+    .chart-modal, #profileModal, #registerModal, #forgotPasswordModal {
+        align-items: flex-end !important;
+        justify-content: center !important;
+    }
+    .chart-container, #profileModal > div, #registerModal > div, #forgotPasswordModal > div {
+        margin-bottom: 10vw;
+    }
+}
+
+/* Parça 5: chart-modal, portfolio, currency, modal, utility ve özel stiller, animasyonlar */
+
+/* Chart Canvas Styles */
+#stockChart, #stockChartCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    display: block !important;
+    background: transparent !important;
+}
+
+/* Chart Modal Styles */
+.chart-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 15, 35, 0.85);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-modal.active {
+    display: flex !important;
+}
+
+.chart-loading, .chart-error {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+}
+
+.chart-error {
+    color: #ef4444;
+}
+
+#stockChart {
+    width: 100%;
+    height: 70vh;
+    min-height: 400px;
+}
+
+/* Fullscreen styles */
+.chart-modal.fullscreen {
+    z-index: 10001;
+}
+
+.chart-modal.fullscreen .chart-container {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.chart-modal.fullscreen .chart-header {
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+.chart-modal.fullscreen .chart-content {
+    flex: 1 !important;
+    height: auto !important;
+    min-height: calc(100vh - 120px) !important;
+    max-height: none !important;
+    padding: 16px !important;
+}
+.chart-modal.active {
+    display: flex;
+}
+.chart-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border-radius: 24px;
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(34, 197, 94, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    min-width: 520px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    backdrop-filter: blur(10px);
+}
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+.chart-title {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.chart-title span {
+    background: linear-gradient(135deg, #22c55e, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+.chart-range-selector {
+    position: relative;
+}
+
+.modern-select {
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    outline: none;
+}
+
+.modern-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.modern-select:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.modern-select option {
+    background: #0b1220;
+    color: #e5e7eb;
+    border: none;
+    padding: 8px;
+}
+.chart-header-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.chart-fullscreen, .chart-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    cursor: pointer;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+.chart-fullscreen {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.chart-fullscreen:hover {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 20px rgba(34, 197, 94, 0.3),
+        0 0 0 1px rgba(34, 197, 94, 0.5);
+}
+.chart-close {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.chart-close:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 20px rgba(239, 68, 68, 0.3),
+        0 0 0 1px rgba(239, 68, 68, 0.5);
+}
+.chart-content {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 0 1px rgba(34, 197, 94, 0.1);
+    padding: 20px;
+    width: 100%;
+    max-width: 900px;
+    min-width: 450px;
+    min-height: 380px;
+    height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+/* Portfolio Table Styles */
+.portfolio-table, .fx-portfolio-section {
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    padding: 12px 0;
+    margin-bottom: 18px;
+}
+.table-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding: 0 12px;
+    min-height: 48px;
+}
+.table-row:last-child {
+    border-bottom: none;
+}
+.header-cell {
+    font-weight: 700;
+    color: #38bdf8;
+    font-size: 1.1em;
+    flex: 1;
+    padding: 10px 0;
+}
+.cell {
+    flex: 1;
+    color: #e5e7eb;
+    font-size: 1em;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.change-positive {
+    color: #22c55e !important;
+    font-weight: 600;
+}
+.change-negative {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+.neutral {
+    color: #b0b3c6 !important;
+}
+/* ESKİ DELETE BUTTON STİLLERİ KALDIRILDI - MODERN VERSİYON KULLANILIYOR */
+/* Card effect for each row */
+.table-row {
+    border-radius: 12px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.01);
+    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
+}
+.table-row .cell {
+    padding: 10px 0;
+}
+
+/* Ana borsa tablosu ilk hücre (Symbol) genişliği */
+.table-row .cell:first-child {
+    min-width: 200px;
+    max-width: 250px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Main stocks table: stack symbol and name like portfolio's stock-info */
+.table-row .cell:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+/* Match portfolio typography for symbol and name */
+.table-row .symbol-cell {
+    font-weight: 700;
+    color: #3b82f6;
+    font-size: 15px; /* Match portfolio */
+    line-height: 1.2;
+}
+
+/* Ensure header and rows share identical grid columns for perfect alignment */
+.stocks-container .table-row {
+    display: grid !important;
+    grid-template-columns: var(--stocks-grid) !important;
+    gap: 12px;
+    align-items: center;
+}
+
+.stocks-container .table-header .table-row,
+.stocks-container #stocksData .table-row {
+    display: grid !important;
+    grid-template-columns: var(--stocks-grid) !important;
+    gap: 12px;
+    align-items: center;
+    padding: 20px 24px; /* Match row padding */
+}
+
+/* Ensure consistent alignment inside cells and headers */
+.stocks-container .table-row > div,
+.stocks-container .table-header .table-row > div {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0; /* prevent content from stretching columns */
+    text-align: left;
+    box-sizing: border-box;
+}
+
+/* Center icon columns (Chart, Portfolio) */
+.stocks-container .table-row > div:nth-last-child(-n+2),
+.stocks-container .table-header .table-row > div:nth-last-child(-n+2) {
+    justify-content: center;
+    text-align: center;
+}
+
+/* Responsive tuning: gradually tighten columns on narrower screens */
+@media (max-width: 1200px) {
+    .stocks-container { --stocks-grid: 200px 120px repeat(4, minmax(120px, 1fr)) 80px 80px; }
+}
+@media (max-width: 1050px) {
+    .stocks-container { --stocks-grid: 190px 110px repeat(4, minmax(110px, 1fr)) 72px 72px; }
+}
+
+.table-row .name-cell {
+    font-size: 12px; /* Match portfolio */
+    color: #e0e0e0; /* Match portfolio */
+    font-weight: 400;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Kalan utility ve özel stiller için devamı eklenecek */ 
+
+/* Parça 6: currency, portfolio, modal, utility, animasyon ve özel responsive stiller */
+
+/* Portfolio table styles */
+.container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+    margin-top: 32px;
+    padding: 0;
+}
+
+.container h2 {
+    text-align: center;
+    padding: 25px 20px;
+    margin: 0;
+    color: white;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #3b82f6, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ESKİ REMOVE-PORTFOLIO-BTN STİLİ SİLİNDİ - SADECE MODERN DELETE-PORTFOLIO-BTN KALDI */
+
+/* Modal overlay utility */
+.floating-elements {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.floating-element {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    animation: floatUp 15s infinite linear;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Son utility ve özel responsive stiller için devamı eklenecek */ 
+
+/* Parça 7: currency, portfolio, modal, utility, animasyon ve responsive utility class'lar */
+
+/* Currency table styles */
+.currency-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+    margin-top: 32px;
+}
+
+.currency-container h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* ESKİ CURRENCY-REMOVE-PORTFOLIO-BTN STİLİ SİLİNDİ - SADECE MODERN DELETE-PORTFOLIO-BTN KALDI */
+
+/* Currency modal styles */
+#currencyChartModal > div, #currencyRemovePortfolioModal > div {
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    border: 1.5px solid rgba(25, 118, 210, 0.10);
+}
+
+/* Currency form styles */
+.currency-form-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+}
+
+.currency-form-group {
+    margin-bottom: 20px;
+}
+
+.currency-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.currency-form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.currency-form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.currency-btn {
+    background: linear-gradient(135deg, #3b82f6, #22c55e);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.currency-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.currency-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.currency-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Currency status indicators */
+.currency-status {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.currency-status.success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid #22c55e;
+}
+
+.currency-status.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.currency-status.loading {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+/* Progress bar */
+.currency-progress-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.currency-progress-fill {
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    height: 100%;
+    transition: width 0.3s ease;
+} 
+
+/* Parça 8: Responsive, utility, animasyon ve özel stiller, media queries, print */
+
+/* Utility classes */
+.flex {
+    display: flex;
+}
+.flex-col {
+    flex-direction: column;
+}
+.flex-row {
+    flex-direction: row;
+}
+.items-center {
+    align-items: center;
+}
+.justify-center {
+    justify-content: center;
+}
+.justify-between {
+    justify-content: space-between;
+}
+.gap-2 {
+    gap: 8px;
+}
+.gap-4 {
+    gap: 16px;
+}
+.mt-2 {
+    margin-top: 8px;
+}
+.mt-4 {
+    margin-top: 16px;
+}
+.mb-2 {
+    margin-bottom: 8px;
+}
+.mb-4 {
+    margin-bottom: 16px;
+}
+.p-2 {
+    padding: 8px;
+}
+.p-4 {
+    padding: 16px;
+}
+.text-center {
+    text-align: center;
+}
+.text-right {
+    text-align: right;
+}
+.text-left {
+    text-align: left;
+}
+.font-bold {
+    font-weight: 700;
+}
+.font-semibold {
+    font-weight: 600;
+}
+.font-normal {
+    font-weight: 400;
+}
+.rounded {
+    border-radius: 8px;
+}
+.rounded-full {
+    border-radius: 9999px;
+}
+.shadow {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+    .container, .portfolio-container, .currency-container, .chart-container {
+        max-width: 98vw;
+        padding: 0 4vw;
+    }
+    .chart-container {
+        max-width: 99vw;
+    }
+}
+@media (max-width: 600px) {
+    .container, .portfolio-container, .currency-container {
+        padding: 0 2vw;
+    }
+    .chart-container {
+        max-width: 100vw;
+        border-radius: 0;
+    }
+    .modal-content, .chart-container, .currency-form-container {
+        border-radius: 0;
+        padding: 10px;
+    }
+    .portfolio-table th, .portfolio-table td, .currency-table th, .currency-table td {
+        padding: 6px 4px;
+        font-size: 13px;
+    }
+    .chart-title {
+        font-size: 16px;
+    }
+    .chart-header {
+        padding: 8px 10px 0 10px;
+    }
+}
+
+/* Print styles */
+@media print {
+    body, html {
+        background: white !important;
+        color: black !important;
+    }
+    .container, .portfolio-container, .currency-container, .chart-container {
+        background: white !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .modal, .chart-modal, .modal-backdrop, .chart-backdrop, .message {
+        display: none !important;
+    }
+    .portfolio-table, .currency-table {
+        background: white !important;
+        color: black !important;
+    }
+    .portfolio-table th, .portfolio-table td, .currency-table th, .currency-table td {
+        color: black !important;
+        background: white !important;
+        border-color: #333 !important;
+    }
+}
+
+/* Son: scroll bar ve küçük dokunuşlar */
+::-webkit-scrollbar {
+    width: 8px;
+    background: rgba(0,0,0,0.1);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(59,130,246,0.3);
+    border-radius: 8px;
+} 
+
+/* --- GÖRSELDEKİ GİBİ: Döviz tablosu modern kutu ve renkler --- */
+
+.currency-table-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 0.7fr;
+    gap: 0;
+    align-items: center;
+    padding: 0;
+    border-bottom: 1.5px solid rgba(255,255,255,0.07);
+    background: none;
+    min-height: 64px;
+    transition: background 0.2s;
+}
+.currency-table-row:hover {
+    background: rgba(255,255,255,0.03);
+}
+.currency-table-row:last-child {
+    border-bottom: none;
+}
+.currency-table-row > div, .currency-table-row .cell, .currency-table-row .header-cell {
+    font-size: 16px;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+    padding: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.currency-table-row > div:first-child {
+    background: #363942;
+    border-radius: 16px;
+    margin: 6px 0 6px 12px;
+    height: 52px;
+    min-width: 120px;
+    max-width: 160px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 18px;
+    display: flex;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.currency-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-start;
+}
+.currency-flag {
+    font-size: 26px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0;
+}
+.currency-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+.currency-symbol {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f59e0b;
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+}
+.currency-name {
+    font-size: 12px;
+    color: #e0e0e0;
+    font-weight: 400;
+    opacity: 0.85;
+}
+.currency-table-row .header-cell {
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    font-size: 17px;
+    background: none;
+    border-radius: 0;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+}
+.currency-table-row .change-positive {
+    color: #22c55e !important;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-shadow: none;
+}
+.currency-table-row .change-negative {
+    color: #ef4444 !important;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-shadow: none;
+} 
+
+/* --- GÖRSELDEKİ GİBİ: Portföy tablosu hisse ve döviz/altın satırı ayrımı, modern kutu ve renkler --- */
+
+.portfolio-table-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 0.7fr;
+    gap: 0;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+    min-height: 64px;
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    margin: 2px 0;
+}
+.portfolio-table-row:hover {
+    background: rgba(255,255,255,0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.portfolio-table-row:last-child {
+    border-bottom: none;
+}
+.portfolio-table-row > div, .portfolio-table-row .cell, .portfolio-table-row .header-cell {
+    font-size: 14px;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+    padding: 6px 4px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Döviz/altın satırı: ilk sütun kutulu, sembol, kod ve açıklama */
+.portfolio-table-row .currency-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-width: 0;
+    max-width: none;
+    padding: 0 12px;
+    gap: 10px;
+    background: rgba(75, 85, 99, 0.2);
+    border-radius: 8px;
+    margin: 4px 0 4px 12px;
+    height: 48px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.1);
+    text-align: left;
+}
+.portfolio-table-row .currency-flag {
+    font-size: 22px;
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+}
+.portfolio-table-row .currency-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+.portfolio-table-row .currency-symbol {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f59e0b;
+    margin-bottom: 0;
+    line-height: 1.1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.portfolio-table-row .currency-name {
+    font-size: 12px;
+    color: #e0e0e0;
+    opacity: 0.85;
+    line-height: 1.1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Hisse satırı: ilk sütun mavi yazı, açıklama açık gri */
+.portfolio-table-row .symbol-cell {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3b82f6;
+    letter-spacing: 0.02em;
+    margin-bottom: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    padding-left: 20px;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    text-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
+    width: 100%;
+}
+.portfolio-table-row .name-cell {
+    font-size: 12px;
+    color: #e0e0e0;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 2px;
+    text-align: left;
+    padding-left: 20px;
+    padding-right: 0;
+    width: 100%;
+}
+.portfolio-table-row .header-cell {
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    background: none;
+    border-radius: 0;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Miktar sütunu için mavi buton tasarımı */
+.portfolio-table-row .cell:nth-child(2) {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    margin: 0 4px;
+    padding: 6px 12px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+    min-width: 50px;
+    max-width: 70px;
+    justify-content: center;
+    font-size: 14px;
+}
+.portfolio-table-row .change-positive {
+    color: #22c55e !important;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-shadow: none;
+}
+.portfolio-table-row .change-negative {
+    color: #ef4444 !important;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-shadow: none;
+}
+/* ESKİ REMOVE-FX-PORTFOLIO-BTN STİLLERİ SİLİNDİ - SADECE MODERN DELETE-PORTFOLIO-BTN KALDI */ 
+
+/* --- PORTFÖY TABLOSU DÜZELTME: Sil butonu ve satır gridleri --- */
+
+/* ESKİ PORTFOLIO DELETE BUTTON STİLLERİ KALDIRILDI - MODERN VERSİYON KULLANILIYOR */
+
+/* .currency-portfolio satırı da .portfolio-table-row ile aynı grid ve spacing'e sahip olmalı */
+.currency-portfolio {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 0.7fr;
+    gap: 0;
+    align-items: center;
+    padding: 0;
+    border-bottom: 1.5px solid rgba(255,255,255,0.07);
+    background: none;
+    min-height: 64px;
+    transition: background 0.2s;
+}
+.currency-portfolio:hover {
+    background: rgba(255,255,255,0.03);
+}
+.currency-portfolio:last-child {
+    border-bottom: none;
+}
+.currency-portfolio > div, .currency-portfolio .cell, .currency-portfolio .header-cell {
+    font-size: 16px;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+    padding: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+} 
+
+/* Silme Onay Modali (siteyle uyumlu) */
+#removePortfolioModal {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15,18,35,0.82);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s;
+}
+#removePortfolioModal > div {
+    background: linear-gradient(135deg, #23243a 60%, #23243a 100%);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    padding: 38px 32px 28px 32px;
+    min-width: 320px;
+    max-width: 95vw;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(59,130,246,0.10);
+    animation: slideDown 0.25s;
+}
+#removePortfolioModal h3 {
+    margin: 0 0 18px 0;
+    font-size: 1.35em;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+    text-align: center;
+}
+#removePortfolioModal .remove-desc {
+    color: #b0b3c6;
+    font-size: 1.08em;
+    margin-bottom: 22px;
+    text-align: center;
+}
+#removePortfolioModal .remove-btns {
+    display: flex;
+    gap: 18px;
+    margin-top: 10px;
+}
+#removePortfolioModal .remove-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+}
+#removePortfolioModal .remove-btn.confirm {
+    background: linear-gradient(135deg,#ef4444,#b91c1c);
+    color: #fff;
+}
+#removePortfolioModal .remove-btn.confirm:hover {
+    background: linear-gradient(135deg,#b91c1c,#ef4444);
+    color: #fff;
+}
+#removePortfolioModal .remove-btn.cancel {
+    background: #23243a;
+    color: #b0b3c6;
+    border: 1px solid #393a4d;
+}
+#removePortfolioModal .remove-btn.cancel:hover {
+    background: #23243a;
+    color: #fff;
+    border: 1px solid #ef4444;
+}
+#removePortfolioModal .remove-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 32px; height: 32px;
+    background: rgba(239,68,68,0.08);
+    border-radius: 50%;
+    border: none;
+    color: #e57373;
+    font-size: 1.25em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    z-index: 2;
+}
+#removePortfolioModal .remove-close:hover {
+    background: #ef4444;
+    color: #fff;
+} 
+
+/* Modal Overlay Polish */
+#loginOverlay, #registerModal, #forgotPasswordModal, #profileModal, .chart-modal {
+    background: linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+}
+#loginOverlay .login-container, #registerModal > div, #forgotPasswordModal > div, #profileModal > div {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 40px 32px 32px 32px;
+    min-width: 320px;
+    max-width: 95vw;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.3s;
+}
+#loginOverlay[style*="display: none"], #registerModal[style*="display: none"], #forgotPasswordModal[style*="display: none"], #profileModal[style*="display: none"] {
+    opacity: 0;
+    pointer-events: none;
+}
+#loginOverlay[style*="display: flex"], #registerModal[style*="display: flex"], #forgotPasswordModal[style*="display: flex"], #profileModal[style*="display: flex"] {
+    opacity: 1;
+    pointer-events: auto;
+} 
+
+.currency-section {
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    padding: 24px 0 18px 0;
+    margin: 32px 0;
+}
+.currency-table-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding: 0 12px;
+    min-height: 48px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.01);
+    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
+    transition: background 0.18s, box-shadow 0.18s;
+}
+.currency-table-row:last-child {
+    border-bottom: none;
+}
+.currency-table-row:hover {
+    background: rgba(59,130,246,0.08);
+    box-shadow: 0 4px 16px rgba(59,130,246,0.08);
+}
+.currency-flag {
+    font-size: 1.6em;
+    margin-right: 10px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.10));
+}
+.currency-symbol {
+    font-weight: 700;
+    color: #38bdf8;
+    font-size: 1.1em;
+}
+.currency-name {
+    color: #b0b3c6;
+    font-size: 0.98em;
+}
+.currency-add-btn {
+    background: #23243a;
+    color: #22c55e;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+    transition: background 0.2s, color 0.2s;
+}
+.currency-add-btn:hover {
+    background: #22c55e;
+    color: #fff;
+} 
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-container {
+        padding: 16px;
+        margin: 0 8px;
+    }
+    .header {
+        margin: 12px 12px 24px 12px;
+        padding: 16px 20px;
+    }
+    .logo-text {
+        font-size: 20px;
+    }
+    .dashboard-title {
+        font-size: 1.8em;
+        margin: 0 0 16px 0;
+    }
+    .stats-bar {
+        padding: 16px;
+        gap: 12px;
+    }
+    .stat-item {
+        min-width: 100px;
+        padding: 10px 12px;
+    }
+    .stat-label {
+        font-size: 0.8em;
+    }
+    .stat-value {
+        font-size: 1.1em;
+    }
+    .stocks-container, .currency-section, .portfolio-table {
+        border-radius: 12px;
+        margin-bottom: 24px;
+    }
+    .table-row, .currency-table-row {
+        padding: 0 8px;
+        min-height: 40px;
+    }
+    .cell {
+        font-size: 0.9em;
+        padding: 6px 0;
+    }
+    .header-cell {
+        font-size: 1em;
+        padding: 8px 0;
+    }
+    .chart-container {
+        min-width: 300px;
+        padding: 16px 20px 24px 20px;
+    }
+    .chart-content {
+        min-width: 280px;
+        min-height: 200px;
+    }
+}
+
+/* Smooth Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.table-row, .currency-table-row, .stat-item {
+    animation: fadeIn 0.3s ease-out;
+}
+.chart-modal, #loginOverlay, #registerModal, #forgotPasswordModal, #profileModal {
+    animation: fadeIn 0.2s ease-out;
+} 
+
+/* Animations and Micro-interactions */
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+/* Data Update Animations */
+.data-updating {
+    animation: pulse 0.6s ease-in-out;
+}
+
+.new-data {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Interactive Elements */
+button, .add-portfolio-btn, .currency-add-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover, .add-portfolio-btn:hover, .currency-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+/* DELETE BUTTON STİLLERİ MODERN VERSİYONDA TANIMLI */
+
+/* Table Row Animations */
+.table-row {
+    animation: slideIn 0.3s ease-out;
+}
+
+.table-row:nth-child(even) {
+    animation-delay: 0.05s;
+}
+
+.table-row:nth-child(odd) {
+    animation-delay: 0.1s;
+}
+
+/* Modal Animations */
+.modal-enter {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-exit {
+    animation: fadeIn 0.3s ease-out reverse;
+}
+
+/* Chart Animations */
+.chart-container {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Progress Bar Animation */
+.progress-fill {
+    transition: width 0.3s ease-out;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+.status-online {
+    background: #22c55e;
+}
+
+.status-offline {
+    background: #ef4444;
+}
+
+.status-loading {
+    background: #f59e0b;
+}
+
+/* Floating Elements Animation */
+.floating-element {
+    position: absolute;
+    color: rgba(255,255,255,0.1);
+    font-size: 24px;
+    font-weight: bold;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+/* Background Animation */
+.background-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #0f0f23, #1a1a2e, #16213e);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    z-index: -1;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+} 
+
+/* CHART BUTTON MANAGER STYLES */
+/* Garanti buton tıklanabilirliği */
+.chart-btn, .chart-icon, [data-chart-symbol] {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Loading state */
+.chart-btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.chart-btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    z-index: 11;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Tıklama feedback */
+.chart-btn:active, .chart-icon:active, [data-chart-symbol]:active {
+    transform: scale(0.95);
+}
+
+.chart-btn:hover, .chart-icon:hover, [data-chart-symbol]:hover {
+    opacity: 0.8;
+}
+
+/* Disabled state */
+.chart-btn:disabled, .chart-icon:disabled, [data-chart-symbol]:disabled,
+.chart-btn.disabled, .chart-icon.disabled, [data-chart-symbol].disabled {
+    pointer-events: none !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Touch device optimization */
+@media (hover: none) and (pointer: coarse) {
+    .chart-btn, .chart-icon, [data-chart-symbol] {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 8px;
+    }
+}
+
+/* MODERN PORTFÖY STİLLERİ */
+/* MODERN PORTFOLIO DESIGN - Professional Table Layout */
+
+.portfolio-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 24px;
+    margin: 32px auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.portfolio-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.portfolio-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+    padding: 20px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    color: #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e5e7eb;
+}
+
+.card-header h2 i {
+    font-size: 1.2rem;
+}
+
+.last-update {
+    font-size: 0.875rem;
+    opacity: 0.7;
+    font-weight: 500;
+    color: #9ca3af;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 0;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.modern-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.875rem;
+}
+
+.modern-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e5e7eb;
+    font-weight: 600;
+    padding: 16px 12px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(20px);
+}
+
+.modern-table th:first-child {
+    text-align: left;
+    width: 18%;
+    min-width: 120px;
+}
+
+.modern-table th:nth-child(2) {
+    width: 12%;
+    min-width: 100px;
+}
+
+.modern-table th:nth-child(3) {
+    width: 15%;
+    min-width: 120px;
+}
+
+.modern-table th:nth-child(4) {
+    width: 14%;
+    min-width: 120px;
+}
+
+.modern-table th:nth-child(5) {
+    width: 14%;
+    min-width: 120px;
+}
+
+.modern-table th:nth-child(6) {
+    width: 12%;
+    min-width: 100px;
+}
+
+.modern-table th:nth-child(7) {
+    width: 12%;
+    min-width: 100px;
+}
+
+.modern-table th:last-child {
+    width: 8%;
+    min-width: 60px;
+}
+
+.modern-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    color: #e5e7eb;
+    text-align: center;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* CRITICAL FIX: Right-align numerical values for better readability */
+.modern-table td:nth-child(n+3),
+.portfolio-container .modern-table td:nth-child(n+3),
+.currency-container .modern-table td:nth-child(n+3),
+table.modern-table td:nth-child(n+3),
+#stockPortfolioBody td:nth-child(n+3),
+#fxPortfolioBody td:nth-child(n+3),
+table td[data-label="ALIŞ"],
+table td[data-label="YATIRIM"],
+table td[data-label="GÜNCEL DEĞER"],
+table td[data-label="K/Z (₺)"],
+table td[data-label="K/Z (%)"],
+table td[data-label="GÜNCEL FİYAT"],
+table td[data-label="K/Z"] {
+    text-align: right !important;
+}
+
+/* Keep first two columns left-aligned (stock name and symbol) */
+.modern-table td:nth-child(1),
+.modern-table td:nth-child(2),
+.portfolio-container .modern-table td:nth-child(1),
+.portfolio-container .modern-table td:nth-child(2),
+.currency-container .modern-table td:nth-child(1),
+.currency-container .modern-table td:nth-child(2),
+table.modern-table td:nth-child(1),
+table.modern-table td:nth-child(2),
+#stockPortfolioBody td:nth-child(1),
+#stockPortfolioBody td:nth-child(2),
+#fxPortfolioBody td:nth-child(1),
+#fxPortfolioBody td:nth-child(2),
+table td[data-label="HISSE"],
+table td[data-label="DÖVİZ"],
+table td[data-label="MIKTAR"] {
+    text-align: left !important;
+}
+
+.modern-table td:first-child {
+    text-align: left !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+    height: auto !important;
+}
+
+/* FIXED: Ultra-specific CSS rules to override ALL conflicting styles */
+/* These rules target the exact container structure to ensure maximum specificity */
+
+/* Portfolio container specific overrides */
+.portfolio-container .modern-table td:nth-child(2),
+.dashboard-card .modern-table td:nth-child(2),
+.table-container .modern-table td:nth-child(2) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    color: #3b82f6 !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+.portfolio-container .modern-table td:nth-child(3),
+.dashboard-card .modern-table td:nth-child(3),
+.table-container .modern-table td:nth-child(3) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    color: #22c55e !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+.portfolio-container .modern-table td:nth-child(4),
+.dashboard-card .modern-table td:nth-child(4),
+.table-container .modern-table td:nth-child(4) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    color: #e5e7eb !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+.portfolio-container .modern-table td:nth-child(5),
+.dashboard-card .modern-table td:nth-child(5),
+.table-container .modern-table td:nth-child(5) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    color: #e5e7eb !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+.portfolio-container .modern-table td:nth-child(6),
+.dashboard-card .modern-table td:nth-child(6),
+.table-container .modern-table td:nth-child(6) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+.portfolio-container .modern-table td:nth-child(7),
+.dashboard-card .modern-table td:nth-child(7),
+.table-container .modern-table td:nth-child(7) {
+    text-align: right !important;
+    font-weight: 600 !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+}
+
+/* Ensure all modern table cells use proper table display with maximum specificity */
+.portfolio-container .modern-table td,
+.dashboard-card .modern-table td,
+.table-container .modern-table td {
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+    height: auto !important;
+}
+
+/* First column (stock/currency name) - left aligned with maximum specificity */
+.portfolio-container .modern-table td:first-child,
+.dashboard-card .modern-table td:first-child,
+.table-container .modern-table td:first-child {
+    text-align: left !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+    height: auto !important;
+}
+
+/* Last column (actions) should be centered with maximum specificity */
+.portfolio-container .modern-table td:last-child,
+.dashboard-card .modern-table td:last-child,
+.table-container .modern-table td:last-child {
+    text-align: center !important;
+    display: table-cell !important;
+    flex: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 16px 12px !important;
+    min-width: auto !important;
+    max-width: none !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+    height: auto !important;
+}
+
+/* CRITICAL FIX: Ultra-specific CSS rules to override all conflicting styles */
+@media (min-width: 769px) {
+    /* Portfolio container specific rules for maximum specificity */
+    .portfolio-container .modern-table,
+    .dashboard-card .modern-table,
+    .table-container .modern-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 900px !important;
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        font-size: 0.875rem !important;
+    }
+    
+    .portfolio-container .modern-table thead,
+    .dashboard-card .modern-table thead,
+    .table-container .modern-table thead {
+        display: table-header-group !important;
+    }
+    
+    .portfolio-container .modern-table tbody,
+    .dashboard-card .modern-table tbody,
+    .table-container .modern-table tbody {
+        display: table-row-group !important;
+    }
+    
+    .portfolio-container .modern-table tr,
+    .dashboard-card .modern-table tr,
+    .table-container .modern-table tr {
+        display: table-row !important;
+        flex-direction: unset !important;
+        background: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        height: auto !important;
+    }
+    
+    .portfolio-container .modern-table th,
+    .dashboard-card .modern-table th,
+    .table-container .modern-table th {
+        display: table-cell !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #e5e7eb !important;
+        font-weight: 600 !important;
+        padding: 16px 12px !important;
+        text-align: center !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        font-size: 0.875rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        backdrop-filter: blur(20px) !important;
+        vertical-align: middle !important;
+    }
+    
+    .portfolio-container .modern-table th:first-child,
+    .dashboard-card .modern-table th:first-child,
+    .table-container .modern-table th:first-child {
+        text-align: left !important;
+        width: 18% !important;
+        min-width: 120px !important;
+    }
+    
+    .portfolio-container .modern-table td,
+    .dashboard-card .modern-table td,
+    .table-container .modern-table td {
+        display: table-cell !important;
+        flex: none !important;
+        justify-content: unset !important;
+        align-items: unset !important;
+        padding: 16px 12px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        text-align: right !important;
+        background: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        min-width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        color: #e5e7eb !important;
+        transition: all 0.3s ease !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Disable mobile pseudo-elements */
+    .portfolio-container .modern-table td::before,
+    .dashboard-card .modern-table td::before,
+    .table-container .modern-table td::before {
+        content: none !important;
+        display: none !important;
+    }
+    
+    /* First column (stock/currency name) - left aligned */
+    .portfolio-container .modern-table td:first-child,
+    .dashboard-card .modern-table td:first-child,
+    .table-container .modern-table td:first-child {
+        text-align: left !important;
+    }
+    
+    /* Second column (quantity) - right aligned with blue color */
+    .portfolio-container .modern-table td:nth-child(2),
+    .dashboard-card .modern-table td:nth-child(2),
+    .table-container .modern-table td:nth-child(2) {
+        text-align: right !important;
+        font-weight: 600 !important;
+        color: #3b82f6 !important;
+    }
+    
+    /* Third column (purchase price) - right aligned with green color */
+    .portfolio-container .modern-table td:nth-child(3),
+    .dashboard-card .modern-table td:nth-child(3),
+    .table-container .modern-table td:nth-child(3) {
+        text-align: right !important;
+        font-weight: 600 !important;
+        color: #22c55e !important;
+    }
+    
+    /* Fourth column (investment) - right aligned */
+    .portfolio-container .modern-table td:nth-child(4),
+    .dashboard-card .modern-table td:nth-child(4),
+    .table-container .modern-table td:nth-child(4) {
+        text-align: right !important;
+        font-weight: 600 !important;
+        color: #e5e7eb !important;
+    }
+    
+    /* Fifth column (current value) - right aligned */
+    .portfolio-container .modern-table td:nth-child(5),
+    .dashboard-card .modern-table td:nth-child(5),
+    .table-container .modern-table td:nth-child(5) {
+        text-align: right !important;
+        font-weight: 600 !important;
+        color: #e5e7eb !important;
+    }
+    
+    /* Sixth column (profit/loss amount) - right aligned */
+    .portfolio-container .modern-table td:nth-child(6),
+    .dashboard-card .modern-table td:nth-child(6),
+    .table-container .modern-table td:nth-child(6) {
+        text-align: right !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Seventh column (profit/loss percentage) - right aligned */
+    .portfolio-container .modern-table td:nth-child(7),
+    .dashboard-card .modern-table td:nth-child(7),
+    .table-container .modern-table td:nth-child(7) {
+        text-align: right !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Last column (actions) - center aligned */
+    .portfolio-container .modern-table td:last-child,
+    .dashboard-card .modern-table td:last-child,
+    .table-container .modern-table td:last-child {
+        text-align: center !important;
+        border-bottom: none !important;
+    }
+    
+    /* Last row - no bottom border */
+    .portfolio-container .modern-table tr:last-child td,
+    .dashboard-card .modern-table tr:last-child td,
+    .table-container .modern-table tr:last-child td {
+        border-bottom: none !important;
+    }
+}
+
+.modern-table tr:last-child td {
+    border-bottom: none;
+}
+
+.modern-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+    transition: all 0.3s ease;
+}
+
+.modern-table tr:hover td {
+    background: transparent;
+}
+
+/* STOCK-INFO STİLİ */
+.stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.symbol {
+    font-weight: 700;
+    color: #3b82f6;
+    font-size: 0.9rem;
+}
+
+.name {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* Ana borsa tablosu için hisse isimleri düzenlemesi */
+.table-row .symbol {
+    font-weight: 700;
+    color: #3b82f6;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.table-row .name {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 400;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 200px;
+}
+
+.symbol-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.symbol-name {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.card-footer {
+    padding: 20px 24px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summary-item span {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.summary-item strong {
+    font-size: 1.125rem;
+    color: #e5e7eb;
+    font-weight: 700;
+}
+
+.summary-item.profit strong {
+    color: #22c55e;
+}
+
+.summary-item.loss strong {
+    color: #ef4444;
+}
+
+/* ÖZET ALANI */
+.portfolio-summary {
+    display: flex;
+    justify-content: flex-end;
+    gap: 20px;
+    margin-top: 15px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    margin: 20px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.portfolio-summary .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.portfolio-summary .summary-item span {
+    font-size: 0.9rem;
+    color: #9ca3af;
+}
+
+.modern-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+    /* CRITICAL FIX: Reduce margin for better spacing */
+    margin-bottom: 1rem;
+}
+
+.modern-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-action {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action:hover {
+    color: #dc3545;
+    background-color: #f8f9fa;
+}
+
+/* ESKİ KARE STİL SİLİNDİ - SADECE YUVARLAK MODERN TASARIM KALDI */
+
+
+
+/* MODERN TASARIM - Küçültülmüş ve düzeltilmiş */
+.btn-action.delete-portfolio-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15)) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    border-radius: 50% !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15) !important;
+    line-height: 1 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.btn-action.delete-portfolio-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+    transition: left 0.5s !important;
+}
+
+.btn-action.delete-portfolio-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.25)) !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+}
+
+.btn-action.delete-portfolio-btn:hover::before {
+    left: 100% !important;
+}
+
+.btn-action.delete-portfolio-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+.btn-action.delete-portfolio-btn i,
+.btn-action.delete-portfolio-btn span {
+    font-size: 10px !important;
+    font-weight: bold !important;
+    color: #ef4444 !important;
+    transition: all 0.3s ease !important;
+    z-index: 1 !important;
+    position: relative !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.btn-action.delete-portfolio-btn:hover i,
+.btn-action.delete-portfolio-btn:hover span {
+    transform: scale(1.1) !important;
+    color: #ffffff !important;
+}
+
+/* KAR/ZARAR GÖRSELLEŞTİRME */
+.profit {
+    color: #22c55e !important;
+    font-weight: 600;
+}
+
+.loss {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+.neutral {
+    color: #9ca3af !important;
+}
+
+/* OPTIMIZED: Simplified mobile styles for table alignment */
+@media (max-width: 768px) {
+    .portfolio-container {
+        padding: 16px;
+        margin: 16px 8px;
+        border-radius: 16px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .card-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    /* SIMPLIFIED: Force table display on mobile */
+    .modern-table {
+        display: table;
+        width: 100%;
+        min-width: 900px;
+        font-size: 0.8rem;
+    }
+    
+    .modern-table thead,
+    .modern-table tbody,
+    .modern-table tr {
+        display: table-row-group;
+    }
+    
+    .modern-table tr {
+        display: table-row;
+    }
+    
+    .modern-table td {
+        display: table-cell;
+        padding: 8px 6px;
+        text-align: right;
+    }
+    
+    .modern-table td:first-child {
+        text-align: left;
+    }
+    
+    .modern-table td:last-child {
+        text-align: center;
+    }
+    
+    .modern-table td::before {
+        content: none;
+    }
+    
+    .summary,
+    .portfolio-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .modern-btn {
+        width: 100%;
+        max-width: 200px;
+        /* CRITICAL FIX: Reduce margin for mobile */
+        margin-bottom: 0.5rem;
+    }
+    
+    /* CRITICAL FIX: Ensure horizontal scrolling on mobile */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    }
+    
+    /* CRITICAL FIX: Right-align numerical values on mobile too */
+    .modern-table td:nth-child(n+3) {
+        text-align: right !important;
+    }
+}
+
+/* ===== YENİ PORTFÖY TASARIMI ===== */
+/* BACKUP: Eski tasarım korunuyor, yeni tasarım üzerine yazılıyor */
+
+/* Yeni Portföy Container */
+.new-portfolio-container {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Portföy Özet Kartları */
+.new-portfolio-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 20px 24px 30px 24px;
+    padding: 0;
+}
+
+.new-summary-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.new-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    opacity: 0.8;
+}
+
+.new-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.new-summary-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.new-summary-value {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.new-summary-card.profit .new-summary-value {
+    color: #22c55e !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+}
+
+.new-summary-card.loss .new-summary-value {
+    color: #ef4444 !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+}
+
+/* Birleşik Portföy Tablosu */
+.new-unified-portfolio {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.new-unified-portfolio:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Portföy Başlığı */
+.new-portfolio-header {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.new-portfolio-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.new-portfolio-title svg {
+    width: 24px;
+    height: 24px;
+    color: #3b82f6;
+}
+
+.new-portfolio-update {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+/* Portföy Tablosu */
+.new-portfolio-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.new-portfolio-table thead {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.new-portfolio-table th {
+    padding: 16px 12px;
+    text-align: left;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.new-portfolio-table th:nth-child(n+3) {
+    text-align: right;
+}
+
+.new-portfolio-table th:last-child {
+    text-align: center;
+}
+
+/* Portföy Satırları */
+.new-portfolio-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.new-portfolio-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.new-portfolio-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Hisse Satırları */
+.new-portfolio-table tbody tr.stock-row {
+    border-left: 4px solid #3b82f6;
+}
+
+/* Döviz Satırları */
+.new-portfolio-table tbody tr.currency-row {
+    border-left: 4px solid #f59e0b;
+}
+
+/* Altın Satırları */
+.new-portfolio-table tbody tr.gold-row {
+    border-left: 4px solid #fbbf24;
+}
+
+/* Tablo Hücreleri */
+.new-portfolio-table td {
+    padding: 16px 12px;
+    color: #ffffff;
+    font-size: 15px;
+    vertical-align: middle;
+}
+
+.new-portfolio-table td:nth-child(n+3) {
+    text-align: right;
+}
+
+.new-portfolio-table td:last-child {
+    text-align: center;
+}
+
+/* Varlık Sembolü */
+.new-asset-symbol {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+}
+
+.new-asset-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.new-asset-icon.stock {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.new-asset-icon.currency {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.new-asset-icon.gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+/* Varlık tipi etiketleri */
+.new-asset-type {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 2px;
+}
+
+.new-asset-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.new-asset-name {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.new-asset-type {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Miktar Kutusu */
+.new-quantity-box {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: inline-block;
+    font-weight: 600;
+    color: #3b82f6;
+    font-size: 14px;
+}
+
+/* Kar/Zarar Renkleri */
+.new-profit {
+    color: #22c55e !important;
+    font-weight: 600;
+}
+
+.new-loss {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+/* Yeni Delete Butonu - TAM YUVARLAK */
+.new-delete-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15)) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    border-radius: 50% !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15) !important;
+    line-height: 1 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.new-delete-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.25));
+    color: #ffffff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.new-delete-btn i {
+    font-size: 10px;
+    font-weight: bold;
+    color: inherit;
+    transition: all 0.3s ease;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.new-delete-btn:hover i {
+    transform: scale(1.1);
+}
+
+/* Responsive Tasarım */
+@media (max-width: 768px) {
+    .new-portfolio-summary {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .new-summary-card {
+        padding: 20px;
+    }
+    
+    .new-summary-value {
+        font-size: 24px;
+    }
+    
+    .new-portfolio-table {
+        font-size: 14px;
+    }
+    
+    .new-portfolio-table th,
+    .new-portfolio-table td {
+        padding: 12px 8px;
+    }
+    
+    .new-asset-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+}
+
+/* Animasyonlar */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.new-portfolio-container {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.new-summary-card {
+    animation: fadeInUp 0.5s ease-out;
+    animation-delay: calc(var(--card-index, 0) * 0.1s);
+}
+
+/* ===== YENİ PORTFÖY TASARIMI TAMAMLANDI ===== */
+
+/* YENİLE BUTONU */
+.button-container {
+    display: flex;
+    justify-content: flex-start;
+    margin: 20px 24px;
+    gap: 12px;
+}
+
+#newRefreshPortfolioBtn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+    backdrop-filter: blur(10px);
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#newRefreshPortfolioBtn:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+
+#newRefreshPortfolioBtn:active {
+    transform: scale(0.98);
+}
+
+#newRefreshPortfolioBtn:disabled {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.25);
+}
+
+/* Center-align numeric columns (2 through 6) in main stocks table */
+.stocks-table thead th:nth-child(2),
+.stocks-table thead th:nth-child(3),
+.stocks-table thead th:nth-child(4),
+.stocks-table thead th:nth-child(5),
+.stocks-table thead th:nth-child(6) {
+    text-align: center;
+}
+
+.stocks-table tbody td:nth-child(2),
+.stocks-table tbody td:nth-child(3),
+.stocks-table tbody td:nth-child(4),
+.stocks-table tbody td:nth-child(5),
+.stocks-table tbody td:nth-child(6) {
+    text-align: center !important;
+}
+
+/* Currency table styling to match main stocks table */
+.currency-section .stocks-container {
+    background: rgba(32, 35, 56, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.currency-section .stocks-container table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 8px 8px; /* Add horizontal spacing to separate columns */
+    background: rgba(32, 35, 56, 0.95);
+    border-radius: 12px;
+    overflow: hidden;
+    table-layout: fixed; /* Force fixed column widths */
+}
+
+.currency-section .stocks-container th {
+    background: rgba(36, 39, 60, 0.95);
+    color: #b0b3c6;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.currency-section .stocks-container td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 12px;
+    word-wrap: break-word; /* Prevent text overflow */
+    overflow: hidden;
+}
+
+.currency-section .stocks-container tbody tr {
+    transition: background 0.18s, transform 0.18s;
+}
+
+.currency-section .stocks-container tbody tr:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateX(5px);
+}
+
+.currency-section .stocks-container .currency-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.currency-section .stocks-container .currency-flag {
+    font-size: 24px;
+}
+
+.currency-section .stocks-container .currency-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.currency-section .stocks-container .currency-symbol {
+    font-weight: 700;
+    font-size: 16px;
+    color: #3b82f6;
+}
+
+.currency-section .stocks-container .currency-name {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.currency-section .stocks-container .price-cell {
+    text-align: center !important;
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+}
+
+.currency-section .stocks-container .usd-change,
+.currency-section .stocks-container .eur-change,
+.currency-section .stocks-container .ons-change,
+.currency-section .stocks-container .gram-change {
+    text-align: center !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.currency-section .stocks-container .usd-change-percent,
+.currency-section .stocks-container .eur-change-percent,
+.currency-section .stocks-container .ons-change-percent,
+.currency-section .stocks-container .gram-change-percent {
+    text-align: center !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.currency-section .stocks-container .currency-add-btn {
+    background: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.currency-section .stocks-container .currency-add-btn:hover {
+    background: #16a34a;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Center-align numeric columns (2 through 4) in currency table */
+.currency-section .stocks-container thead th:nth-child(2),
+.currency-section .stocks-container thead th:nth-child(3),
+.currency-section .stocks-container thead th:nth-child(4) {
+    text-align: center;
+}
+
+.currency-section .stocks-container tbody td:nth-child(2),
+.currency-section .stocks-container tbody td:nth-child(3),
+.currency-section .stocks-container tbody td:nth-child(4) {
+    text-align: center !important;
+}
+
+.currency-section .stocks-container th:nth-child(1) { width: 220px !important; }
+.currency-section .stocks-container th:nth-child(2) { width: 130px !important; }
+.currency-section .stocks-container th:nth-child(3) { width: 140px !important; }
+.currency-section .stocks-container th:nth-child(4) { width: 140px !important; }
+.currency-section .stocks-container th:nth-child(5) { width: 88px !important; }
+
+.currency-section .stocks-container td:nth-child(1) { width: 220px !important; }
+.currency-section .stocks-container td:nth-child(2) { width: 130px !important; }
+.currency-section .stocks-container td:nth-child(3) { width: 140px !important; }
+.currency-section .stocks-container td:nth-child(4) { width: 140px !important; }
+.currency-section .stocks-container td:nth-child(5) { width: 88px !important; }
+
+/* Force column separation with borders */
+.currency-section .stocks-container td:nth-child(3) {
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding-right: 8px !important;
+}
+
+.currency-section .stocks-container td:nth-child(4) {
+    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding-left: 8px !important;
+}
+
+/* Currency section header aligned with table */
+.currency-section .section-title {
+    margin: 0 0 16px 0;
+    padding: 12px 24px;
+    background: rgba(36, 39, 60, 0.95);
+    color: #22c55e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    letter-spacing: -0.3px;
+    text-align: left;
+}
+
+/* Center the last column (Portföy) */
+.currency-section .stocks-container thead th:nth-child(5),
+.currency-section .stocks-container tbody td:nth-child(5) {
+    text-align: center !important;
+}
+
+/* Flex-center the Portföy header to perfectly align with the + button */
+.currency-section .stocks-container thead th:nth-child(5) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 14px; /* keep symmetric padding */
+    padding-right: 14px;
+}
+
+/* Ensure the last column cell uses flex for perfect centering */
+.currency-section .stocks-container tbody td:nth-child(5) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Make the + button match table design and center nicely */
+.currency-section .stocks-container .currency-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #d1fae5;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.currency-section .stocks-container .currency-add-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+    transform: translateY(-1px);
+}
+
+.currency-section .stocks-container .currency-add-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.18);
+}
+
+/* New Portfolio: match currency/main table styling */
+.new-portfolio-container {
+    background: rgba(32, 35, 56, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    margin-top: 24px;
+    overflow: hidden;
+}
+
+.new-portfolio-container .new-portfolio-header {
+    background: rgba(36, 39, 60, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.new-portfolio-container .new-portfolio-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px 6px; /* slightly tighter spacing */
+    table-layout: fixed;
+}
+
+.new-portfolio-container .new-portfolio-table thead th {
+    background: rgba(36, 39, 60, 0.95);
+    color: #b0b3c6;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* Headers for numeric columns centered */
+.new-portfolio-container .new-portfolio-table thead th:nth-child(2),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(3),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(4),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(5),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(6),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(7) {
+    text-align: center;
+}
+
+/* Body numeric columns centered; keep native table layout to avoid stacking */
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(7) {
+    display: table-cell !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Slightly reduce cell padding to match tighter spacing */
+.new-portfolio-container .new-portfolio-table tbody td {
+    padding: 10px 12px;
+}
+
+/* Action column: keep unstyled, just center the button */
+.new-portfolio-container .new-portfolio-table tbody td:last-child {
+    background: transparent;
+    border-bottom: none;
+    border-radius: 0;
+    padding: 6px 12px;
+    display: table-cell;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Column widths to mirror other tables */
+.new-portfolio-container .new-portfolio-table colgroup col:nth-child(1) { width: 220px; }
+.new-portfolio-container .new-portfolio-table colgroup col:nth-child(2) { width: 110px; }
+
+/* Center numeric columns (3 through 7); keep first left and last centered */
+.new-portfolio-container .new-portfolio-table thead th:nth-child(2),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(3),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(4),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(5),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(6),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(7) {
+    text-align: center;
+}
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(7) {
+    text-align: center !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-portfolio-container .new-portfolio-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    background: linear-gradient(135deg, #23243a 0%, #181c2f 100%);
+    border-radius: 12px;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.new-portfolio-container .new-portfolio-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateX(5px);
+}
+
+/* Action column centering */
+.new-portfolio-container .new-portfolio-table thead th:last-child,
+.new-portfolio-container .new-portfolio-table tbody td:last-child {
+    text-align: center !important;
+}
+.new-portfolio-container .new-portfolio-table tbody td:last-child { 
+    display: flex; align-items: center; justify-content: center; 
+}
+
+/* Harmonize delete button inside portfolio table */
+.new-portfolio-container .new-portfolio-table .delete-portfolio-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.08));
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 6px rgba(239, 68, 68, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.new-portfolio-container .new-portfolio-table .delete-portfolio-btn:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+    pointer-events: none;
+}
+.new-portfolio-container .new-portfolio-table .delete-portfolio-btn i {
+    font-size: 12px; line-height: 1; color: #fca5a5;
+}
+.new-portfolio-container .new-portfolio-table .delete-portfolio-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.18), rgba(239, 68, 68, 0.12));
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(239, 68, 68, 0.28);
+}
+.new-portfolio-container .new-portfolio-table .delete-portfolio-btn:active {
+    transform: translateY(0);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.22), rgba(239, 68, 68, 0.16));
+}
+
+/* ULTRA-SPECIFIC OVERRIDE: ensure new table delete button style wins over .btn-action.delete-portfolio-btn !important rules */
+.new-portfolio-container .new-unified-portfolio .new-portfolio-table tbody td:last-child .btn-action.delete-portfolio-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.08)) !important;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 6px rgba(239, 68, 68, 0.18) !important;
+    color: #fca5a5 !important;
+}
+.new-portfolio-container .new-unified-portfolio .new-portfolio-table tbody td:last-child .btn-action.delete-portfolio-btn i,
+.new-portfolio-container .new-unified-portfolio .new-portfolio-table tbody td:last-child .btn-action.delete-portfolio-btn span {
+    font-size: 12px !important;
+    color: #fca5a5 !important;
+}
+.new-portfolio-container .new-unified-portfolio .new-portfolio-table tbody td:last-child .btn-action.delete-portfolio-btn:hover {
+    transform: translateY(-1px) !important;
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.18), rgba(239, 68, 68, 0.12)) !important;
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(239, 68, 68, 0.28) !important;
+}
+
+/* Center numeric columns (2 through 7) with flex to ensure perfect centering */
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(7) {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* Override: ensure numeric cells use table layout, not flex (prevents stacking) */
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(7) {
+    display: table-cell !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Force-center numeric columns in portfolio table (override old right-align rules) */
+.new-portfolio-table thead th:nth-child(2),
+.new-portfolio-table thead th:nth-child(3),
+.new-portfolio-table thead th:nth-child(4),
+.new-portfolio-table thead th:nth-child(5),
+.new-portfolio-table thead th:nth-child(6),
+.new-portfolio-table thead th:nth-child(7) {
+    text-align: center !important;
+}
+
+.new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-table tbody td:nth-child(7) {
+    text-align: center !important;
+    vertical-align: middle !important;
+    display: table-cell !important;
+}
+
+/* Robust centering for inner content in numeric columns (handles spans/divs rendered by JS) */
+.new-portfolio-table tbody td:nth-child(2) > *,
+.new-portfolio-table tbody td:nth-child(3) > *,
+.new-portfolio-table tbody td:nth-child(4) > *,
+.new-portfolio-table tbody td:nth-child(5) > *,
+.new-portfolio-table tbody td:nth-child(6) > *,
+.new-portfolio-table tbody td:nth-child(7) > * {
+    display: inline-block;
+    width: 100%;
+    text-align: center !important;
+}
+
+/* Override global right-align for portfolio table: center specific data-labels */
+.new-portfolio-container .new-portfolio-table td[data-label="MIKTAR"],
+.new-portfolio-container .new-portfolio-table td[data-label="ALIŞ"],
+.new-portfolio-container .new-portfolio-table td[data-label="ALIŞ FİYATI"],
+.new-portfolio-container .new-portfolio-table td[data-label="YATIRIM"],
+.new-portfolio-container .new-portfolio-table td[data-label="TOPLAM YATIRIM (₺)"],
+.new-portfolio-container .new-portfolio-table td[data-label="GÜNCEL DEĞER"],
+.new-portfolio-container .new-portfolio-table td[data-label="GÜNCEL DEĞER (₺)"],
+.new-portfolio-container .new-portfolio-table td[data-label="K/Z (₺)"],
+.new-portfolio-container .new-portfolio-table td[data-label="K/Z (%)"],
+.new-portfolio-container .new-portfolio-table td[data-label="KAR/ZARAR (₺)"],
+.new-portfolio-container .new-portfolio-table td[data-label="KAR/ZARAR (%))"] {
+    text-align: center !important;
+}
+
+/* FINAL OVERRIDE: ensure new portfolio numeric columns are centered regardless of global rules */
+.new-portfolio-container .new-portfolio-table thead th:nth-child(2),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(3),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(4),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(5),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(6),
+.new-portfolio-container .new-portfolio-table thead th:nth-child(7) {
+    text-align: center !important;
+}
+
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(3),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(4),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(5),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(6),
+.new-portfolio-container .new-portfolio-table tbody td:nth-child(7) {
+    text-align: center !important;
+    vertical-align: middle !important;
+    display: table-cell !important;
+}
+
+/* Explicitly override any previous left-align for quantity (MIKTAR) in portfolio */
+.new-portfolio-container .new-portfolio-table tbody td[data-label="MIKTAR"] {
+    text-align: center !important;
+}
+.new-portfolio-container .new-portfolio-table td[data-label="KAR/ZARAR (₺)"],
+.new-portfolio-container .new-portfolio-table td[data-label="KAR/ZARAR (%)"] {
+    text-align: center !important;
+}
