@@ -101,15 +101,15 @@ export function renderRow(symbol, data, status = 'success') {
                     <span class="name">${escapedStockName}</span>
                 </div>
             </td>
-            <td class="price-cell" style="text-align:right;">${price ? price.toFixed(2) + ' ₺' : '-'}</td>
-            <td style="text-align:right;">${prevClose ? prevClose.toFixed(2) + ' ₺' : '-'}</td>
-            <td class="${changeClass}" style="text-align:right;">${change > 0 ? '+' : ''}${change.toFixed(2)} ₺</td>
-            <td class="${changeClass}" style="text-align:right;">${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%</td>
-            <td class="volume-cell" style="text-align:right;">${formatVolume(volume)}</td>
-            <td style="text-align:center;">
+            <td class="price-cell">${price ? price.toFixed(2) + ' ₺' : '-'}</td>
+            <td>${prevClose ? prevClose.toFixed(2) + ' ₺' : '-'}</td>
+            <td class="${changeClass}">${change > 0 ? '+' : ''}${change.toFixed(2)} ₺</td>
+            <td class="${changeClass}">${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%</td>
+            <td class="volume-cell">${formatVolume(volume)}</td>
+            <td>
                 <button class="chart-icon" aria-label="${window.t ? window.t('tbl.chart') : 'Grafik göster'}" data-symbol="${escapedFullSym}" data-clean-symbol="${escapedSymbol}" title="${window.t ? window.t('tbl.chart') : 'Grafik göster'}">📈</button>
             </td>
-            <td style="text-align:center;">
+            <td>
                 <button class="add-portfolio-btn" aria-label="${window.t ? window.t('tbl.portfolio') : 'Portföye ekle'}" data-symbol="${escapedFullSym}" title="${window.t ? window.t('tbl.portfolio') : 'Portföye ekle'}">+</button>
             </td>
         </tr>

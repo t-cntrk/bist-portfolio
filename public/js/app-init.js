@@ -2,7 +2,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeModals();
-    initializePortfolioFixes();
     initializeGlobalErrorHandlers();
     initializePasswordToggles();
     initializeRememberMe();
@@ -123,50 +122,5 @@ function forceRefreshCSS() {
     });
 }
 
-function initializePortfolioFixes() {
-    // Run once on load. Table renders call window.applyPortfolioFixes() afterwards,
-    // so the previous every-1s polling interval was wasteful and has been removed.
-    applyPortfolioFixes();
-}
-
-function applyPortfolioFixes() {
-    // Force right-align numerical values (except new portfolio table)
-    const numericalCells = document.querySelectorAll(`
-        .modern-table td:nth-child(n+3),
-        #stockPortfolioBody td:nth-child(n+3),
-        #fxPortfolioBody td:nth-child(n+3)
-    `);
-    numericalCells.forEach(cell => {
-        if (cell.closest('.new-portfolio-table')) return;
-        cell.style.textAlign = 'right';
-    });
-
-    // Force left-align first two columns
-    const firstTwoColumns = document.querySelectorAll(`
-        .modern-table td:nth-child(1),
-        .modern-table td:nth-child(2),
-        #stockPortfolioBody td:nth-child(1),
-        #stockPortfolioBody td:nth-child(2)
-    `);
-    firstTwoColumns.forEach(cell => {
-        if (cell.closest('.new-portfolio-table')) return;
-        cell.style.textAlign = 'left';
-    });
-
-    // Center alignment for new portfolio table
-    const newPortfolioNumeric = document.querySelectorAll(`
-        .new-portfolio-table tbody td:nth-child(2),
-        .new-portfolio-table tbody td:nth-child(3),
-        .new-portfolio-table tbody td:nth-child(4),
-        .new-portfolio-table tbody td:nth-child(5),
-        .new-portfolio-table tbody td:nth-child(6),
-        .new-portfolio-table tbody td:nth-child(7)
-    `);
-    newPortfolioNumeric.forEach(cell => {
-        cell.style.textAlign = 'center';
-    });
-}
-
 // Make globally accessible
-window.applyPortfolioFixes = applyPortfolioFixes;
 window.forceRefreshCSS = forceRefreshCSS;

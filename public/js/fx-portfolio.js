@@ -118,10 +118,6 @@ export async function renderModernFxPortfolioTable() {
             value: item.quantity * computeFxCurrentPrice(item, fxData),
         }));
         setAllocationSegment('fx', allocationItems);
-
-        if (typeof window.applyPortfolioFixes === 'function') {
-            setTimeout(() => window.applyPortfolioFixes(), 10);
-        }
     } catch (error) {
         console.error('FX portfolio render error:', error);
         fxPortfolioCard.style.display = 'block';

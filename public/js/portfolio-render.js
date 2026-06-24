@@ -131,10 +131,6 @@ export async function renderPortfolioTable() {
         stockPortfolioBody.innerHTML = allRowsHTML.join('');
         setAllocationSegment('stock', allocationItems);
 
-        if (typeof window.applyPortfolioFixes === 'function') {
-            setTimeout(() => window.applyPortfolioFixes(), 10);
-        }
-
         if (totalInvestment) totalInvestment.textContent = formatCurrency(totalInvestmentValue);
 
         const currentValueElement = document.getElementById('newCurrentValue');

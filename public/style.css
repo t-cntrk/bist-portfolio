@@ -657,50 +657,6 @@ body {
     box-shadow: 0 0 8px rgba(59,130,246,0.3);
 }
 
-.refresh-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 24px 0;
-    padding: 16px;
-    background: rgba(255,255,255,0.02);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
-}
-
-.refresh-btn, #refreshPortfolioBtn {
-    background: linear-gradient(135deg,#3b82f6,#22c55e);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 28px;
-    font-size: 1.1em;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(59,130,246,0.10);
-    transition: background 0.2s, transform 0.2s;
-}
-
-.refresh-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.refresh-btn:hover::before {
-    left: 100%;
-}
-
-.refresh-btn:hover, #refreshPortfolioBtn:hover {
-    background: linear-gradient(135deg,#22c55e,#3b82f6);
-    transform: scale(1.04);
-}
-
 .stocks-container {
     background: rgba(32, 35, 56, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3994,52 +3950,6 @@ table td[data-label="MIKTAR"] {
 
 /* ===== YENİ PORTFÖY TASARIMI TAMAMLANDI ===== */
 
-/* YENİLE BUTONU */
-.button-container {
-    display: flex;
-    justify-content: flex-start;
-    margin: 20px 24px;
-    gap: 12px;
-}
-
-#newRefreshPortfolioBtn {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: #ffffff;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
-    backdrop-filter: blur(10px);
-    min-width: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-#newRefreshPortfolioBtn:hover {
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
-}
-
-#newRefreshPortfolioBtn:active {
-    transform: scale(0.98);
-}
-
-#newRefreshPortfolioBtn:disabled {
-    background: linear-gradient(135deg, #6b7280, #4b5563);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.25);
-}
-
 /* Center-align numeric columns (2 through 6) in main stocks table */
 .stocks-table thead th:nth-child(2),
 .stocks-table thead th:nth-child(3),
@@ -4055,6 +3965,20 @@ table td[data-label="MIKTAR"] {
 .stocks-table tbody td:nth-child(5),
 .stocks-table tbody td:nth-child(6) {
     text-align: center !important;
+}
+
+/* Center the action columns (chart / add-to-portfolio) — replaces inline styles */
+.stocks-table tbody td:nth-child(7),
+.stocks-table tbody td:nth-child(8) {
+    text-align: center;
+}
+
+/* Tabular figures so currency/percent digits line up vertically across rows */
+.stocks-table tbody td,
+.currency-section .stocks-container td,
+.new-portfolio-table tbody td {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
 }
 
 /* Currency table styling to match main stocks table */
