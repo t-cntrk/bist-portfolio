@@ -11,6 +11,7 @@ import { createApiRequest, handleApiResponse } from './api.js';
 import { FX_SYMBOL_TO_YAHOO } from './dom-helpers.js';
 import { fetchFxPortfolio } from './portfolio-crud.js';
 import { setAllocationSegment } from './portfolio-allocation.js';
+import { formatTRY as formatCurrency } from './formatters.js';
 
 // ─── FX market data ───────────────────────────────────────────────────────────
 function normalizeFxResponse(data) {
@@ -35,11 +36,6 @@ export async function fetchFxData() {
 // but was never called from the live app path, so it has been removed.
 
 // ─── FX portfolio table rendering ────────────────────────────────────────────
-function formatCurrency(value) {
-    if (value === null || value === undefined || isNaN(value)) return '-';
-    return `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
-}
-
 function getCurrencyName(symbol) {
     const names = { 'USD': 'Amerikan Doları', 'EUR': 'Euro', 'GBP': 'İngiliz Sterlini', 'JPY': 'Japon Yeni', 'TRY': 'Türk Lirası' };
     return names[symbol] || symbol;

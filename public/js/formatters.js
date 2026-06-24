@@ -50,6 +50,13 @@ export function formatCurrency(amount, currency = 'TRY', locale = 'tr-TR') {
     }).format(amount);
 }
 
+// Turkish Lira with thousands separators and a trailing ₺ (e.g. "1.234,56 ₺").
+// Shared by the portfolio tables and the allocation chart so they format identically.
+export function formatTRY(value) {
+    if (value === null || value === undefined || isNaN(value)) return '-';
+    return `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+}
+
 export function formatNumber(number, decimals = 2, locale = 'tr-TR') {
     if (number === null || number === undefined || isNaN(number)) return '-';
     return new Intl.NumberFormat(locale, {

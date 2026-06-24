@@ -8,6 +8,7 @@
  * shows a greyed-out empty circle with a "Varlık Bulunmuyor" message.
  */
 import { escapeHtml } from './dom-helpers.js';
+import { formatTRY } from './formatters.js';
 
 // Dark-mode friendly, vivid and mutually distinguishable palette.
 const PALETTE = [
@@ -25,10 +26,6 @@ const PALETTE = [
 
 let chartInstance = null;
 const segments = { stock: [], fx: [] };
-
-function formatTRY(value) {
-    return `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
-}
 
 /**
  * Register the per-asset values for a source ('stock' | 'fx').

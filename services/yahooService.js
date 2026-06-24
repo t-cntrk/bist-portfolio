@@ -34,6 +34,8 @@ const getMockPrice = (symbol) => {
     return base + (Math.random() - 0.5) * (base * 0.02);
 };
 
+// Curated Turkish display names. Keep these in sync with the frontend's
+// getStockName() in public/js/stocks.js (same symbols/names, without ".IS").
 const getStockDisplayName = (symbol) => {
     const names = {
         'DOAS.IS': 'Doğuş Otomotiv',

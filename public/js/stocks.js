@@ -50,18 +50,20 @@ function updateProgress(current, total) {
 
 // ─── Stock name lookup ────────────────────────────────────────────────────────
 export function getStockName(symbol) {
+    // Curated Turkish display names. Keep these in sync with the backend's
+    // getStockDisplayName() in services/yahooService.js (same symbols/names).
     const names = {
-        'DOAS':  'Doğan Şirketler Grubu',
-        'ALTNY': 'Altyn Gold',
+        'DOAS':  'Doğuş Otomotiv',
+        'ALTNY': 'Altınay Savunma',
         'ALARK': 'Alarko Holding',
         'ASELS': 'Aselsan',
         'ASTOR': 'Astor Enerji',
         'FROTO': 'Ford Otosan',
-        'ISMEN': 'İskur Enerji',
+        'ISMEN': 'İş Yatırım Menkul Değerler',
         'KLSER': 'Kaleseramik',
         'EREGL': 'Ereğli Demir ve Çelik',
-        'KONTR': 'Kontrolmatik',
-        'MIATK': 'Miatk Holding',
+        'KONTR': 'Kontrolmatik Teknoloji',
+        'MIATK': 'Mia Teknoloji',
         'TUPRS': 'Tüpraş',
         'SASA':  'Sasa Polyester',
         'EGPRO': 'Ege Profil',

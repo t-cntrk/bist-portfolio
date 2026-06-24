@@ -14,12 +14,7 @@ import { fetchStock, getStockName } from './stocks.js';
 import { fetchPortfolio } from './portfolio-crud.js';
 import { AppState } from './state.js';
 import { setAllocationSegment } from './portfolio-allocation.js';
-
-// ─── Local helpers ────────────────────────────────────────────────────────────
-function formatCurrency(value) {
-    if (value === null || value === undefined || isNaN(value)) return '-';
-    return `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
-}
+import { formatTRY as formatCurrency } from './formatters.js';
 
 // ─── Stock portfolio row HTML ─────────────────────────────────────────────────
 // currentPrice is fetched once by the caller and passed in (avoids duplicate,
