@@ -68,8 +68,8 @@ if (res.ok && data.success) {
     
     if (window.initPortfolio) window.initPortfolio();
     if (window.initFx) window.initFx();
-    if (window.renderPortfolioTable) window.renderPortfolioTable();
-    if (window.renderFxPortfolioTable) window.renderFxPortfolioTable();
+    if (window.renderUnifiedPortfolio) window.renderUnifiedPortfolio();
+    else if (window.renderPortfolioTable) window.renderPortfolioTable();
     if (window.updateHeaderAvatar) window.updateHeaderAvatar();
     showSuccessMessage('Başarıyla giriş yapıldı!');
 } else {

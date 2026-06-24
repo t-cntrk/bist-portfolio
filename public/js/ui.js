@@ -8,7 +8,7 @@ import {
     addSafeEventListener,
     safeGetElementById,
     createModal, closeModal
-} from './js/dom-helpers.js';
+} from './dom-helpers.js';
 
 // REFACTORED: Module-scoped event listener cleanup registry
 // BACKUP: window.showMessage = showMessage;

@@ -26,11 +26,13 @@ export {
 } from './portfolio-crud.js';
 
 // ─── Stock portfolio rendering ────────────────────────────────────────────────
-export { renderPortfolioTable } from './portfolio-render.js';
-
-// ─── FX market data & FX portfolio rendering ─────────────────────────────────
 export {
-    fetchFxData,
-    renderModernFxPortfolioTable,
-    renderFxPortfolioTable
-} from './fx-portfolio.js';
+    renderUnifiedPortfolio,
+    renderPortfolioTable
+} from './portfolio-render.js';
+
+// Legacy alias — same unified render path
+export { renderUnifiedPortfolio as renderFxPortfolioTable } from './portfolio-render.js';
+
+// ─── FX market data (row helpers used by unified portfolio render) ───────────
+export { fetchFxData } from './fx-portfolio.js';

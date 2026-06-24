@@ -79,12 +79,7 @@ export async function deletePortfolioItem(id) {
         showSuccessMessage(window.t ? window.t('msg.delSuccess') : 'Portföy öğesi silindi');
         // The deleted item may be a stock OR an FX asset; refresh both tables in
         // parallel so the row disappears and totals update immediately.
-        await Promise.all([
-            renderPortfolioTable(),
-            (typeof window.renderFxPortfolioTable === 'function')
-                ? window.renderFxPortfolioTable()
-                : Promise.resolve()
-        ]);
+        await renderPortfolioTable();
         return true;
     } catch (error) {
         console.error('Error deleting portfolio item:', error);

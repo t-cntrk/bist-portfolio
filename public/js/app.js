@@ -188,10 +188,7 @@ async function refreshAll() {
     try {
         await refreshData();
         if (sessionStorage.getItem('currentUser')) {
-            await Promise.all([
-                functionRegistry.renderPortfolioTable(),
-                functionRegistry.renderFxPortfolioTable(),
-            ]);
+            await functionRegistry.renderPortfolioTable();
         }
     } finally {
         if (btn) { btn.disabled = false; btn.classList.remove('refreshing'); }
@@ -207,7 +204,6 @@ function startAutoRefresh() {
         await refreshData();
         if (sessionStorage.getItem('currentUser')) {
             functionRegistry.renderPortfolioTable();
-            functionRegistry.renderFxPortfolioTable();
         }
     }, 60000);
 }
@@ -262,7 +258,6 @@ function initializeApp() {
             functionRegistry.initPortfolio();
             functionRegistry.initFx();
             functionRegistry.renderPortfolioTable();
-            functionRegistry.renderFxPortfolioTable();
 
             console.log('✅ Portföy sistemi başlatıldı ve veriler yüklendi');
         }

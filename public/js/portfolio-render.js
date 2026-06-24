@@ -1,8 +1,8 @@
 /**
- * portfolio-render.js — Stock portfolio table rendering.
+ * portfolio-render.js — Unified portfolio table, summary cards, and donut segments.
  *
- * FX rendering (renderFxTable, renderModernFxPortfolioTable, etc.) has moved
- * to js/fx-portfolio.js (ADIM 4).
+ * renderUnifiedPortfolio() fetches stocks + FX in parallel, renders one table,
+ * updates combined summary totals, and feeds portfolio-allocation.js.
  *
  * Circular-dependency note:
  *   deletePortfolioItem / showPortfolioModal (in portfolio-crud.js) call
@@ -11,10 +11,15 @@
  */
 import { escapeHtml } from './dom-helpers.js';
 import { fetchStock, getStockName } from './stocks.js';
-import { fetchPortfolio } from './portfolio-crud.js';
+import { fetchPortfolio, fetchFxPortfolio } from './portfolio-crud.js';
 import { AppState } from './state.js';
 import { setAllocationSegment } from './portfolio-allocation.js';
 import { formatTRY as formatCurrency } from './formatters.js';
+import {
+    fetchFxData,
+    createModernFxPortfolioRowHTML,
+    computeFxCurrentPrice
+} from './fx-portfolio.js';
 
 // ─── Stock portfolio row HTML ─────────────────────────────────────────────────
 // currentPrice is fetched once by the caller and passed in (avoids duplicate,
@@ -55,33 +60,66 @@ function createModernPortfolioRowHTML(item, currentPrice) {
     </tr>`;
 }
 
-// ─── Stock portfolio table ────────────────────────────────────────────────────
-export async function renderPortfolioTable() {
-    const stockPortfolioBody = document.getElementById('newUnifiedPortfolioBody');
-    const lastUpdateTime     = document.getElementById('newLastUpdateTime');
-    const totalInvestment    = document.getElementById('newTotalInvestment');
-    const totalProfit        = document.getElementById('newTotalProfit');
+function showEmptyPortfolioRow(tbody, message) {
+    tbody.innerHTML = '';
+    const row  = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.setAttribute('colspan', '8');
+    cell.style.cssText = 'display:table-cell;width:auto;text-align:center;color:rgba(255,255,255,0.6);padding:48px 20px;font-size:1.05em;font-weight:500;background:transparent;border:none;';
+    cell.textContent = message;
+    row.appendChild(cell);
+    tbody.appendChild(row);
+}
 
-    if (!stockPortfolioBody) {
+function updateSummaryCards(totalInvestmentValue, totalCurrentValue, totalProfitValue) {
+    const totalInvestment = document.getElementById('newTotalInvestment');
+    const totalProfit     = document.getElementById('newTotalProfit');
+
+    if (totalInvestment) totalInvestment.textContent = formatCurrency(totalInvestmentValue);
+
+    const currentValueElement = document.getElementById('newCurrentValue');
+    if (currentValueElement) currentValueElement.textContent = formatCurrency(totalCurrentValue);
+
+    if (totalProfit) {
+        const profitClass = totalProfitValue >= 0 ? 'profit' : 'loss';
+        const profitSign  = totalProfitValue >= 0 ? '+' : '';
+        totalProfit.innerHTML = `<strong>${profitSign}${escapeHtml(formatCurrency(totalProfitValue))}</strong>`;
+        const profitCard = document.getElementById('newTotalProfitCard');
+        if (profitCard) profitCard.className = `new-summary-card ${profitClass}`;
+    }
+
+    const totalProfitPercentElement = document.getElementById('newTotalProfitPercent');
+    if (totalProfitPercentElement) {
+        const profitPercent = totalInvestmentValue > 0 ? (totalProfitValue / totalInvestmentValue) * 100 : 0;
+        const profitSign    = totalProfitValue >= 0 ? '+' : '';
+        const profitClass   = totalProfitValue >= 0 ? 'profit' : 'loss';
+        totalProfitPercentElement.textContent = `${profitSign}${profitPercent.toFixed(2)}%`;
+        const profitPercentCard = document.getElementById('newTotalProfitPercentCard');
+        if (profitPercentCard) profitPercentCard.className = `new-summary-card ${profitClass}`;
+    }
+}
+
+// ─── Unified portfolio (stocks + FX + summary + donut) ───────────────────────
+export async function renderUnifiedPortfolio() {
+    const portfolioBody  = document.getElementById('newUnifiedPortfolioBody');
+    const lastUpdateTime = document.getElementById('newLastUpdateTime');
+
+    if (!portfolioBody) {
         console.error('Portfolio table body not found: newUnifiedPortfolioBody');
         return;
     }
 
     try {
-        const portfolio = await fetchPortfolio();
+        const [stockPortfolio, fxPortfolio] = await Promise.all([
+            fetchPortfolio(),
+            fetchFxPortfolio()
+        ]);
 
-        if (portfolio.length === 0) {
-            stockPortfolioBody.innerHTML = '';
-            const row  = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.setAttribute('colspan', '8');
-            // Override the table's per-column width + flex rules so the message
-            // spans every column and stays perfectly centered.
-            cell.style.cssText = 'display:table-cell;width:auto;text-align:center;color:rgba(255,255,255,0.6);padding:48px 20px;font-size:1.05em;font-weight:500;background:transparent;border:none;';
-            cell.textContent = 'Portföyünüzde henüz hisse senedi bulunmuyor.';
-            row.appendChild(cell);
-            stockPortfolioBody.appendChild(row);
+        if (stockPortfolio.length === 0 && fxPortfolio.length === 0) {
+            showEmptyPortfolioRow(portfolioBody, 'Portföyünüzde henüz varlık bulunmuyor.');
             setAllocationSegment('stock', []);
+            setAllocationSegment('fx', []);
+            updateSummaryCards(0, 0, 0);
             return;
         }
 
@@ -91,8 +129,6 @@ export async function renderPortfolioTable() {
         let totalCurrentValue    = 0;
         let totalProfitValue     = 0;
 
-        // Reuse prices already loaded into AppState by fetchAllStocks; only hit the
-        // network for symbols we don't have cached (avoids the previous N+1 fetches).
         const cachedStocks = AppState.get('stocks') || [];
         const priceMap = new Map(
             cachedStocks
@@ -100,74 +136,69 @@ export async function renderPortfolioTable() {
                 .map(s => [s.symbol, s.regularMarketPrice])
         );
 
-        const prices = await Promise.all(portfolio.map(async (item) => {
-            if (priceMap.has(item.symbol)) return priceMap.get(item.symbol);
-            try {
-                const stockData = await fetchStock(item.symbol);
-                return stockData && stockData.regularMarketPrice ? stockData.regularMarketPrice : 0;
-            } catch (error) {
-                console.warn(`Failed to fetch current price for ${item.symbol}:`, error);
-                return 0;
-            }
-        }));
+        const [stockPrices, fxData] = await Promise.all([
+            Promise.all(stockPortfolio.map(async (item) => {
+                if (priceMap.has(item.symbol)) return priceMap.get(item.symbol);
+                try {
+                    const stockData = await fetchStock(item.symbol);
+                    return stockData && stockData.regularMarketPrice ? stockData.regularMarketPrice : 0;
+                } catch (error) {
+                    console.warn(`Failed to fetch current price for ${item.symbol}:`, error);
+                    return 0;
+                }
+            })),
+            fetchFxData()
+        ]);
 
         const allRowsHTML = [];
-        const allocationItems = [];
+        const stockAllocationItems = [];
+        const fxAllocationItems = [];
 
-        portfolio.forEach((item, i) => {
-            const currentPrice = prices[i];
-            allRowsHTML.push(createModernPortfolioRowHTML(item, currentPrice));
-
+        stockPortfolio.forEach((item, i) => {
+            const currentPrice  = stockPrices[i];
             const currentValue    = item.quantity * currentPrice;
             const investmentValue = item.quantity * item.purchase_price;
 
+            allRowsHTML.push(createModernPortfolioRowHTML(item, currentPrice));
             totalInvestmentValue += investmentValue;
             totalCurrentValue    += currentValue;
             totalProfitValue     += (currentValue - investmentValue);
-
-            allocationItems.push({ label: item.symbol.replace('.IS', ''), value: currentValue });
+            stockAllocationItems.push({ label: item.symbol.replace('.IS', ''), value: currentValue });
         });
 
-        stockPortfolioBody.innerHTML = allRowsHTML.join('');
-        setAllocationSegment('stock', allocationItems);
+        fxPortfolio.forEach((item) => {
+            const currentPrice  = computeFxCurrentPrice(item, fxData);
+            const currentValue    = item.quantity * currentPrice;
+            const investmentValue = item.quantity * item.purchase_price;
 
-        if (totalInvestment) totalInvestment.textContent = formatCurrency(totalInvestmentValue);
+            allRowsHTML.push(createModernFxPortfolioRowHTML(item, fxData));
+            totalInvestmentValue += investmentValue;
+            totalCurrentValue    += currentValue;
+            totalProfitValue     += (currentValue - investmentValue);
+            fxAllocationItems.push({ label: item.symbol.replace('=X', ''), value: currentValue });
+        });
 
-        const currentValueElement = document.getElementById('newCurrentValue');
-        if (currentValueElement) currentValueElement.textContent = formatCurrency(totalCurrentValue);
-
-        if (totalProfit) {
-            const profitClass = totalProfitValue >= 0 ? 'profit' : 'loss';
-            const profitSign  = totalProfitValue >= 0 ? '+' : '';
-            totalProfit.innerHTML = `<strong>${profitSign}${escapeHtml(formatCurrency(totalProfitValue))}</strong>`;
-            const profitCard = document.getElementById('newTotalProfitCard');
-            if (profitCard) profitCard.className = `new-summary-card ${profitClass}`;
-        }
-
-        const totalProfitPercentElement = document.getElementById('newTotalProfitPercent');
-        if (totalProfitPercentElement) {
-            const profitPercent = totalInvestmentValue > 0 ? (totalProfitValue / totalInvestmentValue) * 100 : 0;
-            const profitSign    = totalProfitValue >= 0 ? '+' : '';
-            const profitClass   = totalProfitValue >= 0 ? 'profit' : 'loss';
-            totalProfitPercentElement.textContent = `${profitSign}${profitPercent.toFixed(2)}%`;
-            const profitPercentCard = document.getElementById('newTotalProfitPercentCard');
-            if (profitPercentCard) profitPercentCard.className = `new-summary-card ${profitClass}`;
-        }
+        portfolioBody.innerHTML = allRowsHTML.join('');
+        setAllocationSegment('stock', stockAllocationItems);
+        setAllocationSegment('fx', fxAllocationItems);
+        updateSummaryCards(totalInvestmentValue, totalCurrentValue, totalProfitValue);
 
     } catch (error) {
-        console.error('Error rendering portfolio table:', error);
-        if (stockPortfolioBody) {
-            stockPortfolioBody.innerHTML = '';
-            const row  = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.setAttribute('colspan', '8');
-            cell.style.cssText = 'text-align:center;color:#dc3545;padding:40px;';
-            cell.textContent = 'Portföy yüklenirken hata oluştu.';
-            row.appendChild(cell);
-            stockPortfolioBody.appendChild(row);
-        }
+        console.error('Error rendering unified portfolio:', error);
+        portfolioBody.innerHTML = '';
+        const row  = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.setAttribute('colspan', '8');
+        cell.style.cssText = 'text-align:center;color:#dc3545;padding:40px;';
+        cell.textContent = 'Portföy yüklenirken hata oluştu.';
+        row.appendChild(cell);
+        portfolioBody.appendChild(row);
     }
 }
 
-// Make renderPortfolioTable available globally for inline onclick handlers and legacy calls
-window.renderPortfolioTable = renderPortfolioTable;
+/** @deprecated Use renderUnifiedPortfolio — kept as alias for legacy callers. */
+export const renderPortfolioTable = renderUnifiedPortfolio;
+
+window.renderUnifiedPortfolio  = renderUnifiedPortfolio;
+window.renderPortfolioTable    = renderUnifiedPortfolio;
+window.renderFxPortfolioTable  = renderUnifiedPortfolio;
