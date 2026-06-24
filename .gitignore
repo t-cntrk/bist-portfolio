@@ -14,6 +14,9 @@ database.db
 cache/
 cache/stockCache.json
 
+backups/
+deploy.log
+
 test-results.json
 coverage/
 

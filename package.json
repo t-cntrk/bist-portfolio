@@ -2,10 +2,10 @@
   "name": "bist-stocks-dashboard",
   "version": "2.0.0",
   "description": "BIST Stocks Dashboard - Modular Architecture",
-  "main": "server-refactored.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server-refactored.js",
-    "dev": "node server-refactored.js",
+    "start": "node server.js",
+    "dev": "node server.js",
     "lint": "eslint .",
     "format": "prettier --check .",
     "test": "npm run test:security && npm run test:unit",
@@ -15,8 +15,8 @@
     "test:all": "npm run test:security && npm run test:regression",
     "deploy": "./scripts/deploy.sh",
     "backup": "node -e \"const fs=require('fs');const d=new Date().toISOString().replace(/[:.]/g,'-');fs.copyFileSync('users.db','users.db.backup.'+d);console.log('Backup created: users.db.backup.'+d)\"",
-    "backup:full": "node -e \"const fs=require('fs');const d=new Date().toISOString().replace(/[:.]/g,'-');fs.copyFileSync('users.db','users.db.backup.'+d);console.log('Backup created: users.db.backup.'+d)\"",
-    "refactor:check": "node -c server-refactored.js",
+    "backup:full": "node -e \"const fs=require('fs');const path=require('path');const d=new Date().toISOString().replace(/[:.]/g,'-');if(fs.existsSync('users.db'))fs.copyFileSync('users.db','users.db.backup.'+d);const cache='cache/stockCache.json';if(fs.existsSync(cache)){fs.mkdirSync('cache',{recursive:true});fs.copyFileSync(cache,'cache/stockCache.backup.'+d+'.json');}console.log('Full backup created:',d)\"",
+    "refactor:check": "node -c server.js",
     "rollback": "echo 'Use rollback script in backups/ directory'"
   },
   "dependencies": {

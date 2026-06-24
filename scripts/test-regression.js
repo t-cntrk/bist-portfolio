@@ -103,9 +103,9 @@ async function testStaticFiles() {
   
   const staticFiles = [
     '/',
-    '/style.css',
+    '/css/style.css',
     '/js/app.js',
-    '/auth.js'
+    '/js/auth.js'
   ];
   
   for (const file of staticFiles) {

@@ -6,7 +6,7 @@ This document summarizes all security improvements implemented in the BIST Stock
 ## 🔒 Critical Security Fixes Implemented
 
 ### 1. Enhanced JWT Secret Validation ✅
-**File**: `server-refactored.js`
+**File**: `server.js`
 **Issue**: Weak JWT secret validation in production
 **Solution**: 
 - Production environment validation with minimum 64-character requirement
@@ -56,7 +56,7 @@ console.error = function(...args) {
 ```
 
 ### 4. Aggressive API Rate Limiting ✅
-**File**: `server-refactored.js`
+**File**: `server.js`
 **Issue**: Insufficient rate limiting protection
 **Solution**:
 - Reduced Yahoo API limits to 30 requests/minute

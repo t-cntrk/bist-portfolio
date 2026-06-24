@@ -389,7 +389,7 @@ const server = app.listen(PORT, () => {
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n❌ Port ${PORT} is already in use.`);
-    console.error('   Stop the other process using this port, or set PORT to a different number (e.g. PORT=3001 node server-refactored.js).\n');
+    console.error('   Stop the other process using this port, or set PORT to a different number (e.g. PORT=3001 node server.js).\n');
     process.exit(1);
   }
   throw err;
