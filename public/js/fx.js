@@ -1,7 +1,7 @@
 // fx.js
 // Import common functions from utils.js
-import { getApiUrl, createApiRequest } from './js/api.js';
-import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './js/notifications.js';
+import { getApiUrl, createApiRequest } from './api.js';
+import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './notifications.js';
 
 // --- GLOBALS & CONSTANTS ---
 const FX_GRAM_CONVERT = 31.1035;

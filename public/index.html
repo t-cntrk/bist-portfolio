@@ -324,66 +324,6 @@
       <!-- TAB PANEL: PİYASALAR SONU -->
 
       <div class="tab-panel" id="tabPortfoy" style="display:none;">
-        <!-- BACKUP: ESKİ PORTFÖY BÖLÜMÜ - YENİ TASARIMA GEÇİŞ İÇİN KORUNUYOR -->
-        <div class="portfolio-container" style="margin-top:32px; display: none;">
-            <!-- HİSSE PORTFÖYÜ KARTI -->
-            <div class="dashboard-card portfolio-card">
-                <div class="card-header">
-                    <div class="header-content">
-                        <div class="header-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                                <path d="M3 18v-6l9-9 9 9v6h-6v-4h-6v4H3z"/>
-                            </svg>
-                        </div>
-                        <div class="header-text">
-                            <h2>Hisse Portföyüm</h2>
-                            <span class="last-update">Son güncelleme: <span id="lastUpdateTime">-</span></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="table-container">
-                    <table id="portfolio-table" class="modern-table">
-                        <thead>
-                            <tr>
-                                <th>HISSE</th>
-                                <th>MIKTAR</th>
-                                <th>ALIŞ</th>
-                                <th>YATIRIM</th>
-                                <th>GÜNCEL DEĞER</th>
-                                <th>K/Z (₺)</th>
-                                <th>K/Z (%)</th>
-                                <th>İŞLEM</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockPortfolioBody">
-                            <!-- JS ile doldurulacak -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="portfolio-summary">
-                    <div class="summary-item">
-                        <span>Toplam Yatırım:</span>
-                        <strong id="totalInvestment">-</strong>
-                    </div>
-                    <div class="summary-item profit" id="totalProfit">
-                        <span>Toplam Kar:</span>
-                        <strong>-</strong>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DÖVİZ PORTFÖYÜ KARTI — eski konumdan taşındı, yeni tasarımda gösteriliyor -->
-
-            <!-- YENİLE BUTONU - Giriş ekranı buton stiliyle -->
-            <div class="button-container">
-                <button id="refreshPortfolioBtn" class="gradient-btn">
-                    <span class="btn-text">Yenile</span>
-                </button>
-            </div>
-        </div>
-
         <!-- YENİ PORTFÖY TASARIMI - BİRLEŞİK TABLO -->
         <div class="new-portfolio-container">
             <!-- Birleşik Portföy Tablosu -->
@@ -692,6 +632,6 @@
 
     <!-- Eski script bloğu kaldırıldı, modüler yapı için yeni script eklendi -->
     <script type="module" src="./js/app.js"></script>
-    <script type="module" src="./app-init.js"></script>
+    <script type="module" src="./js/app-init.js"></script>
 </body>
 </html>

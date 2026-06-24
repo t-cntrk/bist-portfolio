@@ -15,7 +15,7 @@
 export { showChartModal, closeChartModal, toggleChartFullscreen, ChartButtonManager } from './portfolio-chart.js';
 
 // ─── Stock data & rows ────────────────────────────────────────────────────────
-export { fetchStock, fetchAllStocks, renderRow, getStockName } from './js/stocks.js';
+export { fetchStock, fetchAllStocks, renderRow, getStockName } from './stocks.js';
 
 // ─── Portfolio CRUD ───────────────────────────────────────────────────────────
 export {
@@ -23,14 +23,14 @@ export {
     addPortfolioItem, deletePortfolioItem,
     showDeleteConfirmationModal, showPortfolioModal,
     initPortfolio
-} from './js/portfolio-crud.js';
+} from './portfolio-crud.js';
 
 // ─── Stock portfolio rendering ────────────────────────────────────────────────
-export { renderPortfolioTable } from './js/portfolio-render.js';
+export { renderPortfolioTable } from './portfolio-render.js';
 
 // ─── FX market data & FX portfolio rendering ─────────────────────────────────
 export {
     fetchFxData,
     renderModernFxPortfolioTable,
     renderFxPortfolioTable
-} from './js/fx-portfolio.js';
+} from './fx-portfolio.js';

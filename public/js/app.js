@@ -2,10 +2,10 @@
  * app.js — Application entry point.
  * Wires together all modules, sets up event delegation, and boots the app.
  */
-import { initAuth } from '../auth.js';
-import { initPortfolio, showPortfolioModal, renderPortfolioTable, renderFxPortfolioTable, showChartModal, toggleChartFullscreen, deletePortfolioItem, addPortfolioItem, closeChartModal, fetchAllStocks, fetchStock, fetchPortfolio, fetchFxPortfolio, getStockName, renderRow, ChartButtonManager } from '../portfolio.js';
-import { initFx, showFxPortfolioModal, fetchCurrencyData, updateCurrencyDisplay } from '../fx.js';
-import { initUI } from '../ui.js';
+import { initAuth } from './auth.js';
+import { initPortfolio, showPortfolioModal, renderPortfolioTable, renderFxPortfolioTable, showChartModal, toggleChartFullscreen, deletePortfolioItem, addPortfolioItem, closeChartModal, fetchAllStocks, fetchStock, fetchPortfolio, fetchFxPortfolio, getStockName, renderRow, ChartButtonManager } from './portfolio.js';
+import { initFx, showFxPortfolioModal, fetchCurrencyData, updateCurrencyDisplay } from './fx.js';
+import { initUI } from './ui.js';
 import { showErrorMessage, showSuccessMessage } from './notifications.js';
 import { getApiUrl } from './api.js';
 import { closeModal } from './dom-helpers.js';

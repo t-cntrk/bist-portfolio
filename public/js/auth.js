@@ -2,9 +2,9 @@
 let currentUser = null;
 
 // Import common functions from utils.js
-import { getApiUrl, getCsrfToken } from './js/api.js';
-import { showErrorMessage, showSuccessMessage } from './js/notifications.js';
-import { isSecurePassword } from './js/validation.js';
+import { getApiUrl, getCsrfToken } from './api.js';
+import { showErrorMessage, showSuccessMessage } from './notifications.js';
+import { isSecurePassword } from './validation.js';
 // Logout function
 export async function logout() {
     try {

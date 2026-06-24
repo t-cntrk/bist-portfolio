@@ -2,8 +2,8 @@
 import { logout } from './auth.js';
 import { showPortfolioModal, renderPortfolioTable } from './portfolio.js';
 import { showFxPortfolioModal } from './fx.js';
-import { getApiUrl } from './js/api.js';
-import { showMessage, showErrorMessage, showSuccessMessage } from './js/notifications.js';
+import { getApiUrl } from './api.js';
+import { showMessage, showErrorMessage, showSuccessMessage } from './notifications.js';
 import {
     addSafeEventListener,
     safeGetElementById,
@@ -532,16 +532,8 @@ export function initUI() {
         });
     }
 
-    // Portfolio refresh button with cleanup
-    const refreshPortfolioBtn = safeGetElementById('refreshPortfolioBtn');
-    if (refreshPortfolioBtn) {
-        addTrackedEventListener(refreshPortfolioBtn, 'click', function() {
-            if (uiFunctionRegistry.renderPortfolioTable) {
-                uiFunctionRegistry.renderPortfolioTable();
-                showSuccessMessage('Portföy güncellendi.');
-            }
-        });
-    }
+    // NOTE: The legacy per-table #refreshPortfolioBtn was removed with the old
+    // portfolio layout; refreshing now goes through the header #globalRefreshBtn.
 
     // Avatar and username display (always from backend)
     async function updateProfileHeaderFromBackend() {

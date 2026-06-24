@@ -11,7 +11,7 @@ import { showErrorMessage, showSuccessMessage } from './notifications.js';
 import { createModal, closeModal, escapeHtml } from './dom-helpers.js';
 import { validatePortfolioData } from './validation.js';
 import { getStockName, fetchAllStocks } from './stocks.js';
-import { showChartModal, toggleChartFullscreen } from '../portfolio-chart.js';
+import { showChartModal, toggleChartFullscreen } from './portfolio-chart.js';
 // Circular dep (safe): renderPortfolioTable is only called inside function bodies.
 import { renderPortfolioTable } from './portfolio-render.js';
 
@@ -198,22 +198,9 @@ window.closeModal                  = closeModal;
 export function initPortfolio() {
     fetchAllStocks();
 
-    // NOTE: The main #refreshBtn is wired once in app.js (refreshData). Do not
-    // bind it here as well — that caused a duplicate /api/stocks request per click.
-
-    const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
-    if (refreshPortfolioBtn) {
-        let refreshTimeout = null;
-        refreshPortfolioBtn.onclick = () => {
-            if (refreshTimeout) clearTimeout(refreshTimeout);
-            refreshPortfolioBtn.disabled = true;
-            refreshPortfolioBtn.textContent = 'Yenileniyor...';
-            refreshTimeout = setTimeout(async () => {
-                try { await renderPortfolioTable(); }
-                finally { refreshPortfolioBtn.disabled = false; refreshPortfolioBtn.textContent = 'Yenile'; }
-            }, 100);
-        };
-    }
+    // NOTE: Refreshing is handled solely by the header #globalRefreshBtn
+    // (wired in app.js → refreshAll). The old per-table #refreshPortfolioBtn
+    // was removed along with the legacy portfolio layout.
 
     const chartRange = document.getElementById('chartRange');
     if (chartRange) {

@@ -370,18 +370,6 @@ export function applyI18n() {
         if (dict[key]) el.textContent = dict[key];
     });
 
-    // Portfolio refresh buttons
-    const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
-    if (refreshPortfolioBtn) {
-        const span = refreshPortfolioBtn.querySelector('.btn-text');
-        if (span) span.textContent = dict['dash.refresh'];
-    }
-    const newRefreshPortfolioBtn = document.getElementById('newRefreshPortfolioBtn');
-    if (newRefreshPortfolioBtn) {
-        const span = newRefreshPortfolioBtn.querySelector('.btn-text');
-        if (span) span.textContent = dict['dash.refresh'];
-    }
-
     // Chart range options
     document.querySelectorAll('#chartRange option').forEach(opt => {
         const key = opt.getAttribute('data-i18n');

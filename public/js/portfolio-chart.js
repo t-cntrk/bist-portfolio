@@ -1,6 +1,6 @@
 // portfolio-chart.js – chart modal, ChartManager, and chart-related UI
-import { createApiRequest, handleApiResponse } from './js/api.js';
-import { showErrorMessage } from './js/notifications.js';
+import { createApiRequest, handleApiResponse } from './api.js';
+import { showErrorMessage } from './notifications.js';
 
 function escapeHtml(unsafe) {
     if (typeof unsafe !== 'string') return '';
