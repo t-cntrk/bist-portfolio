@@ -6,6 +6,7 @@ import { createApiRequest, handleApiResponse } from './api.js';
 import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './notifications.js';
 import { formatTime, formatVolume } from './formatters.js';
 import { safeGetElementById, escapeHtml } from './dom-helpers.js';
+import { AppState } from './state.js';
 
 let isLoading = false;
 const REQUEST_DELAY = 100;
@@ -147,6 +148,10 @@ export async function fetchAllStocks() {
         const stocksData = await handleApiResponse(response);
 
         if (!Array.isArray(stocksData)) throw new Error('Invalid data format received');
+
+        // Keep AppState in sync so sorting.js has data to work with
+        const normalizedStocks = stocksData.map(s => ({ symbol: s.symbol, ...(s.data || s) }));
+        AppState.set('stocks', normalizedStocks);
 
         const stocksContainer = safeGetElementById('stocksData');
         if (stocksContainer) stocksContainer.textContent = '';

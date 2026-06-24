@@ -36,13 +36,31 @@ export async function getCsrfToken() {
     }
 }
 
-export function createApiRequest(url, options = {}) {
-    const defaultOptions = {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export async function createApiRequest(url, options = {}) {
+    const method = (options.method || 'GET').toUpperCase();
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
     };
-    return fetch(getApiUrl(url), { ...defaultOptions, ...options });
+
+    // Attach a CSRF token for state-changing requests so they pass validateCSRF.
+    if (CSRF_METHODS.has(method)) {
+        try {
+            headers['x-csrf-token'] = await getCsrfToken();
+        } catch (err) {
+            console.error('Could not attach CSRF token:', err);
+        }
+    }
+
+    return fetch(getApiUrl(url), {
+        method: 'GET',
+        credentials: 'include',
+        ...options,
+        headers
+    });
 }
 
 export function handleApiResponse(response) {

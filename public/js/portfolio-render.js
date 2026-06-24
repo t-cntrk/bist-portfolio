@@ -12,6 +12,8 @@
 import { escapeHtml } from './dom-helpers.js';
 import { fetchStock, getStockName } from './stocks.js';
 import { fetchPortfolio } from './portfolio-crud.js';
+import { AppState } from './state.js';
+import { setAllocationSegment } from './portfolio-allocation.js';
 
 // ─── Local helpers ────────────────────────────────────────────────────────────
 function formatCurrency(value) {
@@ -19,25 +21,12 @@ function formatCurrency(value) {
     return `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
 }
 
-async function getCurrentStockPrice(symbol) {
-    try {
-        const stockData = await fetchStock(symbol);
-        return stockData && stockData.regularMarketPrice ? stockData.regularMarketPrice : 0;
-    } catch (error) { return 0; }
-}
-
 // ─── Stock portfolio row HTML ─────────────────────────────────────────────────
-async function createModernPortfolioRowHTML(item) {
+// currentPrice is fetched once by the caller and passed in (avoids duplicate,
+// sequential network requests per row).
+function createModernPortfolioRowHTML(item, currentPrice) {
     const cleanSymbol = item.symbol.replace('.IS', '');
     const stockName   = getStockName(cleanSymbol);
-
-    let currentPrice = 0;
-    try {
-        const stockData = await fetchStock(item.symbol);
-        if (stockData && stockData.regularMarketPrice) currentPrice = stockData.regularMarketPrice;
-    } catch (error) {
-        console.warn(`Failed to fetch current price for ${item.symbol}:`, error);
-    }
 
     const totalValue    = item.quantity * currentPrice;
     const purchaseValue = item.quantity * item.purchase_price;
@@ -91,10 +80,13 @@ export async function renderPortfolioTable() {
             const row  = document.createElement('tr');
             const cell = document.createElement('td');
             cell.setAttribute('colspan', '8');
-            cell.style.cssText = 'text-align:center;color:#6c757d;padding:40px;';
+            // Override the table's per-column width + flex rules so the message
+            // spans every column and stays perfectly centered.
+            cell.style.cssText = 'display:table-cell;width:auto;text-align:center;color:rgba(255,255,255,0.6);padding:48px 20px;font-size:1.05em;font-weight:500;background:transparent;border:none;';
             cell.textContent = 'Portföyünüzde henüz hisse senedi bulunmuyor.';
             row.appendChild(cell);
             stockPortfolioBody.appendChild(row);
+            setAllocationSegment('stock', []);
             return;
         }
 
@@ -104,22 +96,45 @@ export async function renderPortfolioTable() {
         let totalCurrentValue    = 0;
         let totalProfitValue     = 0;
 
+        // Reuse prices already loaded into AppState by fetchAllStocks; only hit the
+        // network for symbols we don't have cached (avoids the previous N+1 fetches).
+        const cachedStocks = AppState.get('stocks') || [];
+        const priceMap = new Map(
+            cachedStocks
+                .filter(s => s && s.symbol && s.regularMarketPrice)
+                .map(s => [s.symbol, s.regularMarketPrice])
+        );
+
+        const prices = await Promise.all(portfolio.map(async (item) => {
+            if (priceMap.has(item.symbol)) return priceMap.get(item.symbol);
+            try {
+                const stockData = await fetchStock(item.symbol);
+                return stockData && stockData.regularMarketPrice ? stockData.regularMarketPrice : 0;
+            } catch (error) {
+                console.warn(`Failed to fetch current price for ${item.symbol}:`, error);
+                return 0;
+            }
+        }));
+
         const allRowsHTML = [];
+        const allocationItems = [];
 
-        for (const item of portfolio) {
-            const rowHTML = await createModernPortfolioRowHTML(item);
-            allRowsHTML.push(rowHTML);
+        portfolio.forEach((item, i) => {
+            const currentPrice = prices[i];
+            allRowsHTML.push(createModernPortfolioRowHTML(item, currentPrice));
 
-            const currentPrice    = await getCurrentStockPrice(item.symbol);
             const currentValue    = item.quantity * currentPrice;
             const investmentValue = item.quantity * item.purchase_price;
 
             totalInvestmentValue += investmentValue;
             totalCurrentValue    += currentValue;
             totalProfitValue     += (currentValue - investmentValue);
-        }
+
+            allocationItems.push({ label: item.symbol.replace('.IS', ''), value: currentValue });
+        });
 
         stockPortfolioBody.innerHTML = allRowsHTML.join('');
+        setAllocationSegment('stock', allocationItems);
 
         if (typeof window.applyPortfolioFixes === 'function') {
             setTimeout(() => window.applyPortfolioFixes(), 10);

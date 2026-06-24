@@ -1,15 +1,14 @@
 // ui.js
-import { initPortfolio, showPortfolioModal, renderPortfolioTable } from './portfolio.js';
-import { initFx, showFxPortfolioModal } from './fx.js';
+import { logout } from './auth.js';
+import { showPortfolioModal, renderPortfolioTable } from './portfolio.js';
+import { showFxPortfolioModal } from './fx.js';
 import { getApiUrl } from './js/api.js';
 import { showMessage, showErrorMessage, showSuccessMessage } from './js/notifications.js';
 import {
-    showRemoveConfirmationModal,
-    addSafeEventListener, removeSafeEventListener,
+    addSafeEventListener,
     safeGetElementById,
     createModal, closeModal
 } from './js/dom-helpers.js';
-import { getAuthToken } from './js/helpers.js';
 
 // REFACTORED: Module-scoped event listener cleanup registry
 // BACKUP: window.showMessage = showMessage;
@@ -99,139 +98,13 @@ export function initUI() {
         });
     }
     
-    // Forgot password submit button with cleanup
-    const forgotSubmitBtn = safeGetElementById('forgotSubmitBtn');
-    if (forgotSubmitBtn) {
-        addTrackedEventListener(forgotSubmitBtn, 'click', async function() {
-            const email = safeGetElementById('forgotEmail')?.value?.trim();
-            const result = safeGetElementById('forgotResult');
-            
-            if (!email) {
-                if (result) {
-                    result.textContent = 'Lütfen e-posta adresinizi girin!';
-                    result.style.color = '#e57373';
-                    result.style.display = 'block';
-                }
-                return;
-            }
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                if (result) {
-                    result.textContent = 'Geçerli bir e-posta adresi girin!';
-                    result.style.color = '#e57373';
-                    result.style.display = 'block';
-                }
-                return;
-            }
-            
-            if (result) {
-                result.style.transition = 'opacity 0.4s';
-                result.style.opacity = 0;
-            }
-            
-            setTimeout(async () => {
-                let foundUser = null;
-                
-                let res, data;
-                try {
-                    res = await fetch(getApiUrl('/api/auth/forgot'), {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({ email })
-                    });
-                    
-                    data = await res.json();
-                } catch (err) {
-                    console.error('Forgot password error:', err);
-                    if (result) {
-                        result.textContent = 'Sunucuya bağlanılamadı!';
-                        result.style.color = '#e57373';
-                        result.style.display = 'block';
-                        setTimeout(() => { result.style.opacity = 1; }, 10);
-                    }
-                    return;
-                }
-                
-                if (result) {
-                    if (res && res.ok) {
-                        result.textContent = data.message || 'Şifre sıfırlama bağlantısı gönderildi!';
-                        result.style.color = '#22c55e';
-                        result.style.display = 'block';
-                        setTimeout(() => { result.style.opacity = 1; }, 10);
-                        
-                        setTimeout(() => {
-                            result.style.opacity = 0;
-                            setTimeout(() => { 
-                                if (forgotModal) forgotModal.style.display = 'none'; 
-                            }, 400);
-                        }, 5000);
-                    } else {
-                        result.textContent = data?.message || 'E-posta bulunamadı!';
-                        result.style.color = '#e57373';
-                        result.style.display = 'block';
-                        setTimeout(() => { result.style.opacity = 1; }, 10);
-                    }
-                }
-            }, 50);
-        });
-    }
-    
-    // REFACTORED: Use event delegation instead of individual event listeners
-    // Stock and FX portfolio add buttons (modal opening)
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('add-portfolio-btn') && e.target.hasAttribute('data-symbol')) {
-            const symbol = e.target.getAttribute('data-symbol');
-            uiFunctionRegistry.showPortfolioModal(symbol);
-        }
-        
-        if (e.target.classList.contains('currency-add-btn')) {
-            const fxName = e.target.getAttribute('data-fxname') || 'XAU/TRY';
-            uiFunctionRegistry.showFxPortfolioModal(fxName);
-        }
-        
-        // Delete button (with confirmation modal)
-        if (e.target.classList.contains('delete-portfolio-btn')) {
-            const btn = e.target;
-            const row = btn.closest('.table-row');
-            if (!row) return;
-            
-            const onclickAttr = btn.getAttribute('onclick');
-            const match = onclickAttr ? onclickAttr.match(/deletePortfolioItem\((\d+)\)/) : null;
-            const itemId = match ? match[1] : null;
-            
-            if (itemId) {
-                if (confirm('Bu öğeyi silmek istediğinize emin misiniz?')) {
-                    // Use function registry instead of window
-                    if (window.deletePortfolioItem) {
-                        window.deletePortfolioItem(itemId);
-                    } else {
-                        showErrorMessage('Hata: deletePortfolioItem fonksiyonu tanımlı değil!');
-                    }
-                }
-            } else {
-                showErrorMessage('Hata: Öğe ID bulunamadı!');
-            }
-        }
-        
-        // Chart opening
-        if (e.target.classList.contains('chart-btn') || e.target.classList.contains('chart-icon')) {
-            const symbol = e.target.getAttribute('data-symbol');
-            if (symbol) {
-                const cleanSymbol = symbol.replace('.IS', '');
-                if (window.showChartModal) {
-                    window.showChartModal(symbol, cleanSymbol, '1m');
-                } else {
-                    showErrorMessage('Hata: showChartModal fonksiyonu tanımlı değil!');
-                }
-            }
-        }
-    });
-    
+    // NOTE: Forgot-password submit handler lives in auth.js (initAuth).
+    // It was duplicated here previously, causing two requests per click — removed.
+
+    // NOTE: Click delegation for add-portfolio / currency-add / delete / chart
+    // buttons lives ONLY in app.js (setupEventDelegation). It was duplicated here,
+    // which caused modals and charts to open/fire twice — removed.
+
     // Chart modal close with cleanup
     const chartModal = safeGetElementById('chartModal');
     if (chartModal) {
@@ -341,26 +214,17 @@ export function initUI() {
     const profileLogoutBtn = safeGetElementById('profileLogoutBtn');
     if (profileLogoutBtn) {
         addTrackedEventListener(profileLogoutBtn, 'click', function() {
+            // Clear all client-side auth state (both storages for safety)
+            sessionStorage.removeItem('currentUser');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authToken');
-            
-            const loginOverlay = safeGetElementById('loginOverlay');
-            if (loginOverlay) loginOverlay.style.display = 'flex';
-            
-            if (uiFunctionRegistry.renderPortfolioTable) uiFunctionRegistry.renderPortfolioTable();
-            
-            // FIXED: Modern portfolio table is handled by renderPortfolioTable()
-            console.log('Portfolio cleared');
-            
-            const summaryDiv = safeGetElementById('portfolioSummary');
-            if (summaryDiv) summaryDiv.innerHTML = '';
-            
+
             if (profileModal) profileModal.style.display = 'none';
-            
             const settingsMenu = safeGetElementById('profileSettingsMenu');
             if (settingsMenu) settingsMenu.style.display = 'none';
-            
-            showSuccessMessage('Başarıyla çıkış yapıldı');
+
+            // Route through auth.js logout(): clears server cookie + redirects to '/'
+            logout();
         });
     }
     
@@ -368,25 +232,28 @@ export function initUI() {
     // Secure password change with email verification
     const profileChangePasswordBtn = safeGetElementById('profileChangePasswordBtn');
     if (profileChangePasswordBtn) {
-        addTrackedEventListener(profileChangePasswordBtn, 'click', function() {
-            fetch(getApiUrl('/api/auth/userinfo'), { credentials: 'include' })
-                .then(res => res.json())
-                .then(userInfo => {
-                    const emailInput = safeGetElementById('passwordChangeEmail');
-                    if (emailInput) emailInput.value = userInfo.email || '';
-                    
-                    const modal = safeGetElementById('changePasswordModal');
-                    if (modal) modal.style.display = 'flex';
-                    
-                    const step1 = safeGetElementById('passwordChangeStep1');
-                    const step2 = safeGetElementById('passwordChangeStep2');
-                    if (step1) step1.style.display = 'block';
-                    if (step2) step2.style.display = 'none';
-                })
-                .catch(err => {
-                    console.error('Error fetching user info:', err);
-                    showErrorMessage('Kullanıcı bilgileri alınamadı!');
+        addTrackedEventListener(profileChangePasswordBtn, 'click', async function() {
+            profileChangePasswordBtn.disabled = true;
+            try {
+                const res = await fetch(getApiUrl('/api/auth/request-password-change'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
                 });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showSuccessMessage(data.message || 'Şifre değiştirme bağlantısı e-postanıza gönderildi.');
+                    const settingsMenu = safeGetElementById('profileSettingsMenu');
+                    if (settingsMenu) settingsMenu.style.display = 'none';
+                } else {
+                    showErrorMessage(data.message || 'E-posta gönderilemedi!');
+                }
+            } catch (err) {
+                console.error('Request password change error:', err);
+                showErrorMessage('Sunucuya bağlanılamadı!');
+            } finally {
+                profileChangePasswordBtn.disabled = false;
+            }
         });
     }
 
@@ -503,25 +370,31 @@ export function initUI() {
     // Secure account deletion with email verification
     const profileDeleteBtn = safeGetElementById('profileDeleteBtn');
     if (profileDeleteBtn) {
-        addTrackedEventListener(profileDeleteBtn, 'click', function() {
-            fetch(getApiUrl('/api/auth/userinfo'), { credentials: 'include' })
-                .then(res => res.json())
-                .then(userInfo => {
-                    const emailInput = safeGetElementById('deleteAccountEmail');
-                    if (emailInput) emailInput.value = userInfo.email || '';
-                    
-                    const modal = safeGetElementById('deleteAccountModal');
-                    if (modal) modal.style.display = 'flex';
-                    
-                    const step1 = safeGetElementById('deleteAccountStep1');
-                    const step2 = safeGetElementById('deleteAccountStep2');
-                    if (step1) step1.style.display = 'block';
-                    if (step2) step2.style.display = 'none';
-                })
-                .catch(err => {
-                    console.error('Error fetching user info:', err);
-                    showErrorMessage('Kullanıcı bilgileri alınamadı!');
+        addTrackedEventListener(profileDeleteBtn, 'click', async function() {
+            if (!confirm('Hesabınızı silmek için e-posta adresinize bir onay bağlantısı gönderilecek. Devam edilsin mi?')) {
+                return;
+            }
+            profileDeleteBtn.disabled = true;
+            try {
+                const res = await fetch(getApiUrl('/api/auth/request-account-deletion'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
                 });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showSuccessMessage(data.message || 'Hesap silme bağlantısı e-postanıza gönderildi.');
+                    const settingsMenu = safeGetElementById('profileSettingsMenu');
+                    if (settingsMenu) settingsMenu.style.display = 'none';
+                } else {
+                    showErrorMessage(data.message || 'E-posta gönderilemedi!');
+                }
+            } catch (err) {
+                console.error('Request account deletion error:', err);
+                showErrorMessage('Sunucuya bağlanılamadı!');
+            } finally {
+                profileDeleteBtn.disabled = false;
+            }
         });
     }
 

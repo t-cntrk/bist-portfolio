@@ -1,9 +1,7 @@
 // fx.js
 // Import common functions from utils.js
-import { getApiUrl } from './js/api.js';
-import { showMessage, showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './js/notifications.js';
-import { escapeHTML } from './js/dom-helpers.js';
-import { safeParse } from './js/helpers.js';
+import { getApiUrl, createApiRequest } from './js/api.js';
+import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './js/notifications.js';
 
 // --- GLOBALS & CONSTANTS ---
 const FX_GRAM_CONVERT = 31.1035;
@@ -166,10 +164,8 @@ export async function fetchCurrencyData(retryCount = 0, forceRefresh = false) {
 
 async function addFxToPortfolio(fxName, quantity, price) {
     try {
-        const response = await fetch(getApiUrl('/api/portfolio'), {
+        const response = await createApiRequest('/api/portfolio', {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 symbol: fxName,
                 quantity: parseFloat(quantity),
@@ -192,7 +188,7 @@ async function addFxToPortfolio(fxName, quantity, price) {
     }
 }
 
-function updateCurrencyDisplay(fxData) {
+export function updateCurrencyDisplay(fxData) {
     try {
         // SAFETY CHECK: Ensure table structure is intact
         const currencyTable = document.querySelector('.currency-section .stocks-container table');
@@ -315,92 +311,6 @@ function updateCurrencyDisplay(fxData) {
     } catch (error) {
         console.error('Currency display update error:', error);
         showErrorMessage('Döviz verileri güncellenirken hata oluştu');
-    }
-}
-
-// --- FETCH FX DATA (single symbol via /api/stocks/quote/:symbol) ---
-async function fetchFxPrice(symbol) {
-    try {
-        const enc = encodeURIComponent(symbol.replace(/[^a-zA-Z0-9.=^\-]/g, ''));
-        const response = await fetch(getApiUrl(`/api/stocks/quote/${enc}`), { credentials: 'include' });
-        if (!response.ok) {
-            throw new Error('FX fetch failed');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(`FX fetch error for ${symbol}:`, error);
-        return { error: true };
-    }
-}
-
-async function fetchGramAltin() {
-    try {
-        const [onsRes, usdRes] = await Promise.all([
-            fetch(getApiUrl('/api/stocks/quote/GC=F'), { credentials: 'include' }),
-            fetch(getApiUrl('/api/stocks/quote/USDTRY=X'), { credentials: 'include' })
-        ]);
-        
-        if (!onsRes.ok || !usdRes.ok) throw new Error('API error');
-        
-        const onsData = await onsRes.json();
-        const usdData = await usdRes.json();
-        
-        const onsPrice = Number(onsData.regularMarketPrice ?? onsData.price ?? onsData.lastPrice ?? 0);
-        const onsPrev = Number(onsData.regularMarketPreviousClose ?? onsData.previousClose ?? onsData.lastClose ?? 0);
-        const usdPrice = Number(usdData.regularMarketPrice ?? usdData.price ?? usdData.lastPrice ?? 0);
-        const usdPrev = Number(usdData.regularMarketPreviousClose ?? usdData.previousClose ?? usdData.lastClose ?? 0);
-        
-        const gram = (onsPrice / FX_GRAM_CONVERT) * usdPrice;
-        const gramPrev = (onsPrev / FX_GRAM_CONVERT) * usdPrev;
-        const change = gram - gramPrev;
-        const changePercent = gramPrev !== 0 ? ((change / gramPrev) * 100) : 0;
-        
-        const priceEl = safeQuerySelector(FX_CLASSES.GRAM.price);
-        const changeEl = safeQuerySelector(FX_CLASSES.GRAM.change);
-        const percentEl = safeQuerySelector(FX_CLASSES.GRAM.percent);
-        
-        if (priceEl) priceEl.textContent = gram.toFixed(2) + ' ₺';
-        if (changeEl && percentEl) {
-            changeEl.classList.remove('change-positive', 'change-negative');
-            percentEl.classList.remove('change-positive', 'change-negative');
-            
-            let changeText = change > 0 ? '+' + change.toFixed(2) : change.toFixed(2);
-            let percentText = changePercent > 0 ? '+' + changePercent.toFixed(2) + '%' : changePercent.toFixed(2) + '%';
-            
-            if (isNaN(change)) changeText = '-';
-            if (isNaN(changePercent)) percentText = '-';
-            
-            if (change > 0) {
-                changeEl.classList.add('change-positive');
-                percentEl.classList.add('change-positive');
-            } else if (change < 0) {
-                changeEl.classList.add('change-negative');
-                percentEl.classList.add('change-negative');
-            }
-            
-            changeEl.textContent = changeText;
-            percentEl.textContent = percentText;
-        }
-        
-        window.fxLatestPrices['XAU/TRY'] = gram;
-        window.fxLatestPrices['gram-price'] = gram;
-    } catch (e) {
-        console.error('Gram altın fetch error:', e);
-        const priceEl = safeQuerySelector(FX_CLASSES.GRAM.price);
-        const changeEl = safeQuerySelector(FX_CLASSES.GRAM.change);
-        const percentEl = safeQuerySelector(FX_CLASSES.GRAM.percent);
-        
-        if (priceEl) priceEl.textContent = '-';
-        if (changeEl) changeEl.textContent = '-';
-        if (percentEl) percentEl.textContent = '-';
-    }
-}
-
-export async function fetchAllFx() {
-    try {
-        await fetchCurrencyData(0, true);
-    } catch (error) {
-        console.error('Error in fetchAllFx:', error);
     }
 }
 
@@ -596,80 +506,28 @@ export function showFxPortfolioModal(fxName) {
     }
 }
 
-// Backend API for FX portfolio operations
-async function fetchFxPortfolio() {
-    try {
-        const res = await fetch(getApiUrl('/api/portfolio'), {
-            credentials: 'include'
-        });
-        
-        if (!res.ok) return [];
-        
-        const portfolio = await res.json();
-        return portfolio.filter(item => item.type === 'fx');
-    } catch (error) {
-        console.error('FX Portfolio fetch error:', error);
-        return [];
-    }
-}
-
-async function addFxPortfolioItem(symbol, quantity, purchasePrice) {
-    try {
-        const response = await fetch(getApiUrl('/api/portfolio'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                symbol: symbol,
-                quantity: quantity,
-                purchase_price: purchasePrice,
-                type: 'fx'
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('FX Portfolio add failed');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('FX Portfolio add error:', error);
-        throw error;
-    }
-}
-
-async function deleteFxPortfolioItem(id) {
-    try {
-        const response = await fetch(getApiUrl(`/api/portfolio/${id}`), {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-
-        if (!response.ok) {
-            throw new Error('FX Portfolio delete failed');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('FX Portfolio delete error:', error);
-        throw error;
-    }
-}
+// NOTE: FX portfolio backend operations (fetch/add/delete) live in
+// js/portfolio-crud.js and js/fx-portfolio.js. Duplicate copies that used to
+// live here were never called and have been removed.
 
 export function initFx() {
     try {
-        // Initial FX data fetch
+        // Initial FX data fetch (renders the currency table once on boot/login).
         fetchCurrencyData();
-        
-        // Set up periodic updates
-        fxAutoRefreshInterval = setInterval(() => {
-            fetchCurrencyData();
-        }, 15000); // Update every 15 seconds for more frequent updates
-        
-        // Add global functions for manual refresh
+
+        // Periodic FX updates are driven by the single master refresh loop in
+        // app.js (refreshData → updateCurrencyDisplay). We intentionally do NOT
+        // start a separate setInterval here — that previously stacked a new timer
+        // on every login, leaking timers and multiplying /api/stocks/fx calls.
+        if (fxAutoRefreshInterval) {
+            clearInterval(fxAutoRefreshInterval);
+            fxAutoRefreshInterval = null;
+        }
+
+        // Global helpers for manual refresh
         window.refreshFxData = () => fetchCurrencyData(0, true);
         window.clearFxCache = clearFxCache;
-        
+
         console.log('FX module initialized successfully');
     } catch (error) {
         console.error('FX initialization error:', error);

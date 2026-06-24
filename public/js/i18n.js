@@ -13,6 +13,11 @@ export const translations = {
         'login.passwordLabel': 'Şifre',
         'login.passwordPlaceholder': 'Şifrenizi girin',
         'login.submit': 'Giriş Yap',
+        'login.rememberMe': 'Beni Hatırla',
+        'tabs.markets': 'Piyasalar',
+        'tabs.portfolio': 'Portföyüm',
+        'allocation.title': 'Varlık Dağılımı',
+        'allocation.empty': 'Varlık Bulunmuyor',
         'login.forgot': 'Şifremi Unuttum?',
         'login.verifyNotice': '📧 E-postanızı doğrulamanız gerekiyor',
         'login.resend': 'Yeniden Gönder',
@@ -128,6 +133,11 @@ export const translations = {
         'login.passwordLabel': 'Password',
         'login.passwordPlaceholder': 'Enter your password',
         'login.submit': 'Sign In',
+        'login.rememberMe': 'Remember Me',
+        'tabs.markets': 'Markets',
+        'tabs.portfolio': 'My Portfolio',
+        'allocation.title': 'Asset Allocation',
+        'allocation.empty': 'No Assets',
         'login.forgot': 'Forgot Password?',
         'login.verifyNotice': '📧 Please verify your email address',
         'login.resend': 'Resend',
@@ -283,11 +293,8 @@ export function applyI18n() {
     if (stats[2]) stats[2].textContent = dict['dash.nextUpdate'];
     if (stats[3]) stats[3].textContent = dict['dash.api'];
 
-    const refreshText = document.getElementById('btnText');
+    const refreshText = document.querySelector('#globalRefreshBtn .global-refresh-label');
     if (refreshText) refreshText.textContent = dict['dash.refresh'];
-
-    const testBtn = document.getElementById('testChartBtn');
-    if (testBtn) testBtn.textContent = dict['dash.testChart'];
 
     const currencyTitle = document.querySelector('.currency-section .section-title');
     if (currencyTitle) currencyTitle.textContent = dict['dash.currencyTitle'];

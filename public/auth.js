@@ -3,7 +3,7 @@ let currentUser = null;
 
 // Import common functions from utils.js
 import { getApiUrl, getCsrfToken } from './js/api.js';
-import { showMessage, showErrorMessage, showSuccessMessage } from './js/notifications.js';
+import { showErrorMessage, showSuccessMessage } from './js/notifications.js';
 import { isSecurePassword } from './js/validation.js';
 // Logout function
 export async function logout() {
@@ -68,6 +68,8 @@ if (res.ok && data.success) {
     
     if (window.initPortfolio) window.initPortfolio();
     if (window.initFx) window.initFx();
+    if (window.renderPortfolioTable) window.renderPortfolioTable();
+    if (window.renderFxPortfolioTable) window.renderFxPortfolioTable();
     if (window.updateHeaderAvatar) window.updateHeaderAvatar();
     showSuccessMessage('Başarıyla giriş yapıldı!');
 } else {

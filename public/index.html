@@ -45,7 +45,14 @@
                 </div>
                 <div class="form-group" style="margin-bottom:20px;">
                     <label for="password" data-i18n="login.passwordLabel" style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;">Şifre</label>
-                    <input type="password" id="password" name="password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="Şifrenizi girin" required style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                    <div style="position:relative;">
+                        <input type="password" id="password" name="password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="Şifrenizi girin" required style="width:100%;padding:12px 44px 12px 16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;box-sizing:border-box;">
+                        <button type="button" class="password-toggle-btn" data-target="password" aria-label="Şifreyi göster" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);background:transparent;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);transition:color 0.2s;"></button>
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <input type="checkbox" id="rememberMe" style="width:16px;height:16px;accent-color:#3b82f6;cursor:pointer;margin:0;">
+                    <label for="rememberMe" data-i18n="login.rememberMe" style="color:rgba(255,255,255,0.8);font-size:14px;font-weight:500;cursor:pointer;user-select:none;margin:0;">Beni Hatırla</label>
                 </div>
                 <button type="submit" class="login-btn" data-i18n="login.submit" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;border-radius:10px;color:white;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;position:relative;overflow:hidden;">Giriş Yap</button>
             </form>
@@ -112,7 +119,17 @@
                 </div>
                 <div class="logo-text" style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;height:40px;display:flex;align-items:center;line-height:40px;">Borsa Portal</div>
             </div>
+            <nav class="dashboard-tabs" id="dashboardTabs">
+                <button type="button" class="dash-tab active" data-tab="piyasalar"><span class="dash-tab-label" data-i18n="tabs.markets">Piyasalar</span></button>
+                <button type="button" class="dash-tab" data-tab="portfoy"><span class="dash-tab-label" data-i18n="tabs.portfolio">Portföyüm</span></button>
+            </nav>
             <div class="user-section" style="display:flex;align-items:center;gap:10px;">
+                <button id="globalRefreshBtn" class="global-refresh-btn" title="Yenile" aria-label="Yenile">
+                    <svg class="global-refresh-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    <span class="global-refresh-label" data-i18n="dash.refresh">Yenile</span>
+                </button>
                 <div class="lang-toggle" id="langToggle" style="display:none;position:relative;right:auto;top:auto;">
                     <button id="langBtn" title="Change language" aria-label="Change language">
                         <span class="lang-icon">🌐</span>
@@ -127,6 +144,7 @@
     </header>
 
     <div class="main-container">
+      <div class="tab-panel" id="tabPiyasalar">
         <h1 class="dashboard-title"><span class="title-primary">BIST Stocks</span> <span class="title-accent">Dashboard</span></h1>
 
         <div class="stats-bar">
@@ -140,21 +158,12 @@
             </div>
             <div class="stat-item">
                 <div class="stat-label">Sonraki güncelleme</div>
-                <div class="stat-value" id="nextUpdate">-</div>
+                <div class="stat-value" id="nextUpdate">Manuel</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">API Kullanımı</div>
                 <div class="stat-value" id="apiUsage">0/60</div>
             </div>
-        </div>
-
-        <div class="refresh-section">
-            <button id="refreshBtn" class="refresh-btn">
-                <span id="btnText">Yenile</span>
-            </button>
-            <button id="testChartBtn" style="background:#3b82f6;color:white;border:none;padding:8px 16px;border-radius:6px;margin-left:10px;cursor:pointer;" onclick="testChartFunctionality()">
-                Test Chart
-            </button>
         </div>
 
         <div class="progress-container" id="progressBar" style="display:none;">
@@ -311,7 +320,10 @@
                 </table>
             </div>
         </div>
+      </div>
+      <!-- TAB PANEL: PİYASALAR SONU -->
 
+      <div class="tab-panel" id="tabPortfoy" style="display:none;">
         <!-- BACKUP: ESKİ PORTFÖY BÖLÜMÜ - YENİ TASARIMA GEÇİŞ İÇİN KORUNUYOR -->
         <div class="portfolio-container" style="margin-top:32px; display: none;">
             <!-- HİSSE PORTFÖYÜ KARTI -->
@@ -386,23 +398,39 @@
                     <div class="new-portfolio-update"><span data-i18n="dash.lastUpdate">Son güncelleme</span>: <span id="newLastUpdateTime">-</span></div>
                 </div>
                 
-                <!-- Portföy Özet Kartları - Portföyüm yazısının altında -->
-                <div class="new-portfolio-summary">
-                    <div class="new-summary-card" style="--card-index: 0;">
-                        <div class="new-summary-label" data-i18n="summary.totalInvestment">Toplam Yatırım</div>
-                        <div class="new-summary-value" id="newTotalInvestment">-</div>
+                <!-- Portföy Özet Kartları + Varlık Dağılımı Grafiği -->
+                <div class="new-portfolio-overview">
+                    <div class="new-portfolio-summary">
+                        <div class="new-summary-card" style="--card-index: 0;">
+                            <div class="new-summary-label" data-i18n="summary.totalInvestment">Toplam Yatırım</div>
+                            <div class="new-summary-value" id="newTotalInvestment">0.00 ₺</div>
+                        </div>
+                        <div class="new-summary-card" style="--card-index: 1;">
+                            <div class="new-summary-label" data-i18n="summary.currentValue">Güncel Değer</div>
+                            <div class="new-summary-value" id="newCurrentValue">0.00 ₺</div>
+                        </div>
+                        <div class="new-summary-card" id="newTotalProfitCard" style="--card-index: 2;">
+                            <div class="new-summary-label" data-i18n="summary.totalPnL">Toplam Kar/Zarar</div>
+                            <div class="new-summary-value" id="newTotalProfit">0.00 ₺</div>
+                        </div>
+                        <div class="new-summary-card" id="newTotalProfitPercentCard" style="--card-index: 3;">
+                            <div class="new-summary-label" data-i18n="summary.pnlPct">Kar/Zarar %</div>
+                            <div class="new-summary-value" id="newTotalProfitPercent">%0.00</div>
+                        </div>
                     </div>
-                    <div class="new-summary-card" style="--card-index: 1;">
-                        <div class="new-summary-label" data-i18n="summary.currentValue">Güncel Değer</div>
-                        <div class="new-summary-value" id="newCurrentValue">-</div>
-                    </div>
-                    <div class="new-summary-card" id="newTotalProfitCard" style="--card-index: 2;">
-                        <div class="new-summary-label" data-i18n="summary.totalPnL">Toplam Kar/Zarar</div>
-                        <div class="new-summary-value" id="newTotalProfit">-</div>
-                    </div>
-                    <div class="new-summary-card" id="newTotalProfitPercentCard" style="--card-index: 3;">
-                        <div class="new-summary-label" data-i18n="summary.pnlPct">Kar/Zarar %</div>
-                        <div class="new-summary-value" id="newTotalProfitPercent">-</div>
+
+                    <div class="allocation-card">
+                        <div class="allocation-title" data-i18n="allocation.title">Varlık Dağılımı</div>
+                        <div class="allocation-body">
+                            <div class="allocation-chart-wrap">
+                                <canvas id="allocationChart"></canvas>
+                                <div id="allocationEmpty" class="allocation-empty">
+                                    <span class="allocation-empty-circle"></span>
+                                    <span class="allocation-empty-text" data-i18n="allocation.empty">Varlık Bulunmuyor</span>
+                                </div>
+                            </div>
+                            <div id="allocationLegend" class="allocation-legend"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -425,12 +453,6 @@
                 </table>
             </div>
 
-            <!-- YENİLE BUTONU -->
-            <div class="button-container">
-                <button id="newRefreshPortfolioBtn" class="gradient-btn">
-                    <span class="btn-text">Yenile</span>
-                </button>
-            </div>
         </div>
 
         <!-- DÖVİZ PORTFÖYÜ KARTI — yeni tasarım bölümüne taşındı -->
@@ -463,6 +485,8 @@
                 </table>
             </div>
         </div>
+      </div>
+      <!-- TAB PANEL: PORTFÖY SONU -->
 
 
     </div>
@@ -503,8 +527,8 @@
     </div>
 
     <!-- REGISTER MODAL START -->
-    <div id="registerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
-        <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.13);box-shadow:0 25px 45px rgba(0,0,0,0.25);padding:38px 32px 24px 32px;min-width:320px;max-width:95vw;position:relative;display:flex;flex-direction:column;align-items:center;">
+    <div id="registerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+        <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.13);box-shadow:0 25px 45px rgba(0,0,0,0.25);padding:38px 32px 24px 32px;min-width:320px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative;display:flex;flex-direction:column;align-items:center;">
             <div style='position:absolute;top:12px;right:12px;display:flex;gap:4px;z-index:1100;'>
                 <button id="closeRegisterModalBtn" style="background:transparent;border:none;box-shadow:none;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color 0.2s;">
                     <span style="font-size:1.1em;color:#e57373;transition:color 0.2s;">&#10005;</span>
@@ -529,10 +553,16 @@
                     <input id="registerUsername" type="text" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
                 </label>
                 <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.password">Şifre</span>
-                    <input id="registerPassword" type="password" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                    <div style="position:relative;margin-top:10px;">
+                        <input id="registerPassword" type="password" required style="width:100%;padding:12px 44px 12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                        <button type="button" class="password-toggle-btn" data-target="registerPassword" aria-label="Şifreyi göster" style="position:absolute;top:50%;right:14px;transform:translateY(-50%);background:transparent;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);transition:color 0.2s;"></button>
+                    </div>
                 </label>
                 <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;"><span data-i18n="register.passwordConfirm">Şifrenizi Tekrar Giriniz</span>
-                    <input id="registerPasswordConfirm" type="password" required style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                    <div style="position:relative;margin-top:10px;">
+                        <input id="registerPasswordConfirm" type="password" required style="width:100%;padding:12px 44px 12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;transition:all 0.3s ease;">
+                        <button type="button" class="password-toggle-btn" data-target="registerPasswordConfirm" aria-label="Şifreyi göster" style="position:absolute;top:50%;right:14px;transform:translateY(-50%);background:transparent;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);transition:color 0.2s;"></button>
+                    </div>
                 </label>
                 <div id="registerPasswordHelp" data-i18n="register.passwordHint" style="color:#e57373;font-size:12px;display:none;margin-top:-10px;margin-bottom:4px;">Şifre en az 8 karakter, büyük harf, küçük harf, rakam ve özel karakter içermelidir.</div>
                 <div id="registerPasswordConfirmHelp" data-i18n="register.passwordMismatch" style="color:#e57373;font-size:12px;display:none;margin-top:-10px;margin-bottom:4px;">Şifreler eşleşmiyor.</div>

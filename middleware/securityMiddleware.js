@@ -1,6 +1,24 @@
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
+
+// ============================================
+// VALIDATION RESULT HANDLER
+// ============================================
+
+// Returns the first express-validator error (if any) as { message }.
+// Apply AFTER body(...) validators on a route.
+function handleValidationErrors(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: errors.array()[0].msg,
+      errors: errors.array()
+    });
+  }
+  next();
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -51,7 +69,7 @@ function validateCSRF(req, res, next) {
 const yahooLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // Max 30 requests per minute
-  message: { error: 'Too many requests, please wait 1 minute' },
+  message: { message: 'Çok fazla istek gönderildi, lütfen 1 dakika bekleyin.' },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,
@@ -62,7 +80,7 @@ const yahooLimiter = rateLimit({
 const chartLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // Max 20 chart requests per minute
-  message: { error: 'Too many chart requests, please wait 1 minute' },
+  message: { message: 'Çok fazla grafik isteği gönderildi, lütfen 1 dakika bekleyin.' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -71,7 +89,7 @@ const chartLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5, // Max 5 login/register attempts per minute
-  message: { error: 'Too many attempts, please try again in 1 minute' },
+  message: { message: 'Çok fazla deneme yapıldı, lütfen 1 dakika sonra tekrar deneyin.' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -80,7 +98,7 @@ const authLimiter = rateLimit({
 const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 3, // Max 3 password reset requests per minute
-  message: { message: 'Too many password reset attempts, please try again in 1 minute' },
+  message: { message: 'Çok fazla şifre sıfırlama isteği, lütfen 1 dakika sonra tekrar deneyin.' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -235,6 +253,9 @@ module.exports = {
   generateCSRFToken,
   validateCSRF,
   csrfTokens,
+
+  // Validation
+  handleValidationErrors,
   
   // Rate Limiters
   yahooLimiter,

@@ -104,7 +104,7 @@ async function testStaticFiles() {
   const staticFiles = [
     '/',
     '/style.css',
-    '/main.js',
+    '/js/app.js',
     '/auth.js'
   ];
   
@@ -242,7 +242,7 @@ async function testErrorHandling() {
 async function runTests() {
   log('🚀 Starting BIST Stocks Dashboard Regression Tests', 'blue');
   log(`Base URL: ${TEST_CONFIG.baseUrl}`, 'blue');
-  log('=' * 50, 'blue');
+  log('='.repeat(50), 'blue');
   
   const startTime = Date.now();
   
@@ -258,9 +258,9 @@ async function runTests() {
   const duration = (endTime - startTime) / 1000;
   
   // Print results
-  log('\n' + '=' * 50, 'blue');
+  log('\n' + '='.repeat(50), 'blue');
   log('📊 TEST RESULTS', 'blue');
-  log('=' * 50, 'blue');
+  log('='.repeat(50), 'blue');
   
   log(`✅ Passed: ${testResults.passed}`, 'green');
   log(`❌ Failed: ${testResults.failed}`, testResults.failed > 0 ? 'red' : 'green');

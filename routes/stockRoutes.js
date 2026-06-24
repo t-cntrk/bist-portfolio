@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const stockController = require('../controllers/stockController');
-const { yahooLimiter, chartLimiter } = require('../middleware/securityMiddleware');
+const { yahooLimiter, chartLimiter, authenticateToken } = require('../middleware/securityMiddleware');
 
 /**
  * @route   GET /api/stocks
@@ -24,9 +24,9 @@ router.get('/stocks/quote/:symbol', yahooLimiter, stockController.getQuote);
 
 /**
  * @route   POST /api/stocks/clear-cache
- * @desc    Clear stock/FX cache (for force refresh)
+ * @desc    Clear stock/FX cache (for force refresh) — requires authentication
  */
-router.post('/stocks/clear-cache', yahooLimiter, stockController.clearCache);
+router.post('/stocks/clear-cache', authenticateToken, yahooLimiter, stockController.clearCache);
 
 /**
  * @route   GET /api/stocks/:symbol/chart

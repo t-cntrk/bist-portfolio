@@ -28,9 +28,6 @@ const {
 } = require('./middleware/securityMiddleware');
 const { errorMiddleware } = require('./utils/errorHandler');
 
-// Import services
-const { generateErrorPage, generateSuccessPage, generatePasswordResetForm } = require('./services/pageGenerator');
-
 // Import routes
 const authController = require('./controllers/authController');
 const authRoutes = require('./routes/authRoutes');
@@ -53,6 +50,10 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust the first proxy hop (nginx / Docker ingress / Vercel) so req.secure and
+// client IPs (used by rate limiting) are evaluated correctly behind a proxy.
+app.set('trust proxy', 1);
 
 const allowedOrigins = getAllowedOrigins();
 
@@ -234,28 +235,29 @@ app.post('/api/error-log', (req, res) => {
 // TESTING & DEBUG ENDPOINTS (DEV ONLY)
 // ============================================
 
-// Health check
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Server is working!', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Email service test
-app.get('/test-email', async (req, res) => {
-  try {
-    const result = await testEmail();
-    res.json(result);
-  } catch (error) {
-    console.error('Email test error:', error);
-    res.status(500).json({ 
-      error: 'Email sending failed',
-      details: error.message 
+// Health check and email test are dev-only (avoid info disclosure / abuse in prod)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/test', (req, res) => {
+    res.json({
+      message: 'Server is working!',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
     });
-  }
-});
+  });
+
+  app.get('/test-email', async (req, res) => {
+    try {
+      const result = await testEmail();
+      res.json(result);
+    } catch (error) {
+      console.error('Email test error:', error);
+      res.status(500).json({
+        error: 'Email sending failed',
+        details: error.message
+      });
+    }
+  });
+}
 
 // Token debug endpoint (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -305,6 +307,12 @@ app.get('/verify-email', authController.verifyEmail);
 // Password reset page (logic lives in authController.resetPasswordPage)
 app.get('/reset-password', authController.resetPasswordPage);
 
+// Password-change page (from email link; logic in authController.passwordChangePage)
+app.get('/verify-password-change', authController.passwordChangePage);
+
+// Account-deletion confirmation page (from email link)
+app.get('/verify-account-deletion', authController.accountDeletionPage);
+
 // ============================================
 // API ROUTES
 // ============================================
@@ -344,12 +352,28 @@ app.use((req, res) => {
 // Initialize database
 const db = initializeDatabase();
 
-// Graceful shutdown handler
-process.on('SIGINT', () => {
-  console.log('\nShutting down gracefully...');
-  shutdownDatabase();
-  process.exit(0);
-});
+// Graceful shutdown handler (SIGINT = Ctrl+C, SIGTERM = Docker/K8s stop)
+function gracefulShutdown(signal) {
+  console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+  // Stop accepting new connections, then close DB and exit
+  if (typeof server !== 'undefined' && server.close) {
+    server.close(() => {
+      shutdownDatabase();
+      process.exit(0);
+    });
+    // Force-exit if connections linger too long
+    setTimeout(() => {
+      shutdownDatabase();
+      process.exit(0);
+    }, 10000).unref();
+  } else {
+    shutdownDatabase();
+    process.exit(0);
+  }
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start server (handle port-in-use so it doesn't throw unhandled)
 const server = app.listen(PORT, () => {

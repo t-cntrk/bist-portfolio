@@ -1,80 +1,45 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// ENHANCED CONNECTION POOL: Better SQLite connection management
 const dbPath = path.join(__dirname, '..', 'users.db');
-const connectionPool = [];
-const maxConnections = 5;
-const connectionTimeout = 5000; // 5 seconds timeout
 
-function getConnection() {
-  try {
-    if (connectionPool.length > 0) {
-      return connectionPool.pop();
-    }
-    return new sqlite3.Database(dbPath);
-  } catch (error) {
-    console.error('Failed to get database connection:', error);
-    throw error;
-  }
-}
+// SINGLE SHARED CONNECTION model.
+//
+// node-sqlite3 serializes all statements issued on one Database object through an
+// internal queue, so a single shared connection is both safe and the recommended
+// pattern. The previous "pool" opened a brand-new connection whenever the pool
+// was empty, so the number of concurrently-open connections was effectively
+// unbounded under load. Using one shared connection caps that at exactly one.
+let sharedConnection = null;
 
-function releaseConnection(connection) {
-  try {
-    if (connectionPool.length < maxConnections) {
-      // Test connection before returning to pool
-      connection.get('SELECT 1', (err) => {
-        if (err) {
-          console.warn('Invalid connection, closing instead of returning to pool');
-          connection.close();
-        } else {
-          connectionPool.push(connection);
-        }
-      });
-    } else {
-      connection.close();
-    }
-  } catch (error) {
-    console.error('Error releasing connection:', error);
-    try {
-      connection.close();
-    } catch (closeErr) {
-      console.error('Error closing connection:', closeErr);
-    }
-  }
-}
-
-// Connection pool health check (avoid mutating array during iteration)
-setInterval(() => {
-  if (connectionPool.length === 0) return;
-  const snapshot = connectionPool.slice();
-  snapshot.forEach((connection) => {
-    try {
-      connection.get('SELECT 1', (err) => {
-        if (err) {
-          console.warn('Removing stale connection from pool');
-          connection.close();
-          const i = connectionPool.indexOf(connection);
-          if (i !== -1) connectionPool.splice(i, 1);
-        }
-      });
-    } catch (error) {
-      console.warn('Error checking connection health:', error);
-      connection.close();
-      const i = connectionPool.indexOf(connection);
-      if (i !== -1) connectionPool.splice(i, 1);
+function createConnection() {
+  const conn = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Failed to open database connection:', err);
     }
   });
-}, 300000); // Check every 5 minutes
+  conn.on('error', (err) => {
+    console.error('Database connection error:', err);
+  });
+  return conn;
+}
+
+function getConnection() {
+  if (!sharedConnection) {
+    sharedConnection = createConnection();
+  }
+  return sharedConnection;
+}
+
+// Kept for API compatibility with all existing call sites. The shared connection
+// stays open for the lifetime of the process and is closed in shutdownDatabase().
+function releaseConnection(/* connection */) {
+  // no-op
+}
 
 // Database initialization
 function initializeDatabase() {
   const db = getConnection();
-  
-  db.on('error', (err) => {
-    console.error('Database connection error:', err);
-    process.exit(1);
-  });
 
   console.log('Connected to SQLite database at:', dbPath);
 
@@ -118,31 +83,46 @@ function initializeDatabase() {
         console.log('Portfolios table ready');
       }
     });
-  });
 
-  // Add email_sending_status column to users table if it doesn't exist
-  db.run(`ALTER TABLE users ADD COLUMN email_sending_status INTEGER DEFAULT 0`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding email_sending_status column:', err);
-    }
-  });
+    // Migrations (ALTER/INDEX) must run inside the same serialize() block AFTER
+    // the CREATE TABLE statements, otherwise they can execute before the tables
+    // exist on a cold start.
 
-  // Add UNIQUE constraint to email column
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`, (err) => {
-    if (err) {
-      console.error('Error adding unique constraint to email:', err);
-    } else {
-      console.log('Email unique constraint ensured');
-    }
-  });
+    // Dedicated columns for password-change / account-deletion flows so their
+    // tokens don't collide with email-verification / password-reset tokens.
+    db.run(`ALTER TABLE users ADD COLUMN action_token TEXT`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding action_token column:', err);
+      }
+    });
+    db.run(`ALTER TABLE users ADD COLUMN action_token_expires INTEGER`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding action_token_expires column:', err);
+      }
+    });
+    db.run(`ALTER TABLE users ADD COLUMN action_type TEXT`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding action_type column:', err);
+      }
+    });
 
-  // Prevent duplicate portfolio entries for same user/symbol/type combination
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolio_unique ON portfolios(user_id, symbol, type)`, (err) => {
-    if (err && !err.message.includes('already exists')) {
-      console.error('Error adding unique constraint to portfolio:', err);
-    } else {
-      console.log('Portfolio unique constraint ensured');
-    }
+    // Add UNIQUE constraint to email column
+    db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`, (err) => {
+      if (err) {
+        console.error('Error adding unique constraint to email:', err);
+      } else {
+        console.log('Email unique constraint ensured');
+      }
+    });
+
+    // Prevent duplicate portfolio entries for same user/symbol/type combination
+    db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolio_unique ON portfolios(user_id, symbol, type)`, (err) => {
+      if (err && !err.message.includes('already exists')) {
+        console.error('Error adding unique constraint to portfolio:', err);
+      } else {
+        console.log('Portfolio unique constraint ensured');
+      }
+    });
   });
 
   return db;
@@ -151,16 +131,16 @@ function initializeDatabase() {
 // Graceful shutdown
 function shutdownDatabase() {
   console.log('Shutting down database gracefully...');
-  
-  // Close all connections in the pool
-  connectionPool.forEach(connection => {
+
+  if (sharedConnection) {
     try {
-      connection.close();
+      sharedConnection.close();
     } catch (err) {
-      console.error('Error closing connection from pool:', err);
+      console.error('Error closing shared connection:', err);
     }
-  });
-  
+    sharedConnection = null;
+  }
+
   console.log('Database connections closed.');
 }
 

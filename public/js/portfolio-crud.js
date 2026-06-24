@@ -77,7 +77,14 @@ export async function deletePortfolioItem(id) {
             throw new Error(errorData.message || (window.t ? 'Delete failed' : 'Silme işlemi başarısız'));
         }
         showSuccessMessage(window.t ? window.t('msg.delSuccess') : 'Portföy öğesi silindi');
-        await renderPortfolioTable();
+        // The deleted item may be a stock OR an FX asset; refresh both tables in
+        // parallel so the row disappears and totals update immediately.
+        await Promise.all([
+            renderPortfolioTable(),
+            (typeof window.renderFxPortfolioTable === 'function')
+                ? window.renderFxPortfolioTable()
+                : Promise.resolve()
+        ]);
         return true;
     } catch (error) {
         console.error('Error deleting portfolio item:', error);
@@ -191,8 +198,8 @@ window.closeModal                  = closeModal;
 export function initPortfolio() {
     fetchAllStocks();
 
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) refreshBtn.onclick = () => fetchAllStocks();
+    // NOTE: The main #refreshBtn is wired once in app.js (refreshData). Do not
+    // bind it here as well — that caused a duplicate /api/stocks request per click.
 
     const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
     if (refreshPortfolioBtn) {

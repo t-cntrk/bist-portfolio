@@ -13,7 +13,7 @@ exports.getPortfolio = (req, res) => {
         releaseConnection(db);
         if (err) {
             console.error('Database error:', err);
-            return res.status(500).json({ message: 'Could not fetch portfolio data' });
+            return res.status(500).json({ message: 'Portföy verileri alınamadı' });
         }
         res.json(rows);
     });
@@ -33,7 +33,7 @@ exports.addAsset = (req, res) => {
         releaseConnection(db);
         if (err) {
             if (err.code === 'SQLITE_CONSTRAINT') {
-                return res.status(400).json({ error: 'Bu hisse zaten portföyünüzde mevcut' });
+                return res.status(400).json({ message: 'Bu hisse zaten portföyünüzde mevcut' });
             }
             console.error('Portfolio insert error:', err);
             return res.status(500).json({ message: 'Portföy eklenemedi' });
@@ -52,11 +52,11 @@ exports.deleteAsset = (req, res) => {
     db.run('DELETE FROM portfolios WHERE id = ? AND user_id = ?', [assetId, userId], function(err) {
         releaseConnection(db);
         if (err) {
-            return res.status(500).json({ message: 'Delete failed' });
+            return res.status(500).json({ message: 'Silme işlemi başarısız' });
         }
         if (this.changes === 0) {
-            return res.status(404).json({ message: 'Asset not found or unauthorized' });
+            return res.status(404).json({ message: 'Öğe bulunamadı veya yetkiniz yok' });
         }
-        res.json({ message: 'Asset removed successfully' });
+        res.json({ message: 'Öğe portföyden kaldırıldı' });
     });
 };

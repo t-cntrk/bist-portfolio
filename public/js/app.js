@@ -4,10 +4,11 @@
  */
 import { initAuth } from '../auth.js';
 import { initPortfolio, showPortfolioModal, renderPortfolioTable, renderFxPortfolioTable, showChartModal, toggleChartFullscreen, deletePortfolioItem, addPortfolioItem, closeChartModal, fetchAllStocks, fetchStock, fetchPortfolio, fetchFxPortfolio, getStockName, renderRow, ChartButtonManager } from '../portfolio.js';
-import { initFx, showFxPortfolioModal, fetchCurrencyData } from '../fx.js';
+import { initFx, showFxPortfolioModal, fetchCurrencyData, updateCurrencyDisplay } from '../fx.js';
 import { initUI } from '../ui.js';
 import { showErrorMessage, showSuccessMessage } from './notifications.js';
-import { showRemoveConfirmationModal, closeModal } from './dom-helpers.js';
+import { getApiUrl } from './api.js';
+import { closeModal } from './dom-helpers.js';
 import { sendErrorLog } from './helpers.js';
 import { AppState } from './state.js';
 import { getCurrentLang, applyI18n } from './i18n.js';
@@ -30,7 +31,6 @@ const functionRegistry = {
     deletePortfolioItem,
     addPortfolioItem,
     closeChartModal,
-    showRemoveConfirmationModal,
     fetchAllStocks,
     fetchStock,
     fetchPortfolio,
@@ -43,6 +43,13 @@ const functionRegistry = {
 window.showErrorMessage = showErrorMessage;
 window.showSuccessMessage = showSuccessMessage;
 window.closeModal = closeModal;
+
+// Expose init/render functions so auth.js can boot portfolio & FX after login
+window.initPortfolio = initPortfolio;
+window.initFx = initFx;
+window.renderPortfolioTable = renderPortfolioTable;
+window.renderFxPortfolioTable = renderFxPortfolioTable;
+window.fetchCurrencyData = fetchCurrencyData;
 
 // ─── Event delegation ─────────────────────────────────────────────────────────
 function setupEventDelegation() {
@@ -72,8 +79,10 @@ function setupEventDelegation() {
                 functionRegistry.showChartModal(symbol, cleanSymbol, '1m');
             }
         },
-        '#closeChartBtn': () => functionRegistry.closeChartModal(),
-        '#chartFullscreenBtn': () => functionRegistry.toggleChartFullscreen()
+        '#closeChartBtn': () => functionRegistry.closeChartModal()
+        // NOTE: #chartFullscreenBtn is intentionally NOT delegated here.
+        // It is bound directly (onclick) in portfolio-chart.js/showChartModal.
+        // Having both caused the fullscreen toggle to fire twice and cancel out.
     };
 
     document.addEventListener('click', (e) => {
@@ -95,20 +104,9 @@ function setupEventDelegation() {
         }
     }, { passive: false });
 
-    document.addEventListener('change', (e) => {
-        if (e.target.id === 'chartRange') {
-            const modal = document.getElementById('chartModal');
-            if (modal && modal.style.display !== 'none') {
-                const symbolElement = document.getElementById('modalSymbol');
-                if (symbolElement && symbolElement.textContent) {
-                    const symbol = symbolElement.textContent + '.IS';
-                    const range = e.target.value;
-                    const apiRange = ['1w', '1m', '1y', '10y'].includes(range) ? range : '1m';
-                    functionRegistry.showChartModal(symbol, symbolElement.textContent, apiRange);
-                }
-            }
-        }
-    }, { passive: true });
+    // NOTE: #chartRange changes are handled by the select's own onchange
+    // (set in showChartModal), which reloads only the chart data. Delegating
+    // here previously re-ran showChartModal and loaded the chart twice per change.
 }
 
 window.retryStock = window.retryStock || function() {};
@@ -149,25 +147,25 @@ async function refreshData() {
         if (btnText) showLoading('btnText', 'Yenileniyor...');
         console.log('🔄 Fetching stocks and FX data...');
 
-        const [stocksRes, fxRes] = await Promise.all([
-            fetch('/api/stocks'),
-            fetch('/api/stocks/fx')
-        ]);
-
-        if (!stocksRes.ok || !fxRes.ok) {
-            throw new Error(`HTTP error! stocks: ${stocksRes.status}, fx: ${fxRes.status}`);
+        // fetchAllStocks() renders the stock table AND updates AppState.stocks itself,
+        // so we only fetch FX separately here (avoids a duplicate /api/stocks request).
+        const fxRes = await fetch(getApiUrl('/api/stocks/fx'), { credentials: 'include' });
+        if (!fxRes.ok) {
+            throw new Error(`HTTP error! fx: ${fxRes.status}`);
         }
 
-        const stocksData = await stocksRes.json();
         const fxData = await fxRes.json();
-
-        const stocksArray = Array.isArray(stocksData) ? stocksData : [];
         const fxArray = Array.isArray(fxData) ? fxData : [];
-
-        AppState.set('stocks', stocksArray);
         AppState.set('fx', fxArray);
 
-        functionRegistry.fetchAllStocks();
+        // Update the Döviz Kurları table DOM too (previously only the 15s FX
+        // interval did this, so "Yenile" left the currency table stale).
+        const fxKeyed = Object.fromEntries(fxArray.map(d => [d.symbol, d]));
+        window.fxLatestPrices = fxKeyed;
+        updateCurrencyDisplay(fxKeyed);
+
+        await functionRegistry.fetchAllStocks();
+        const stocksArray = AppState.get('stocks') || [];
         updateTickerUI(stocksArray, fxArray);
 
         if (window.refreshSorting) window.refreshSorting();
@@ -179,6 +177,39 @@ async function refreshData() {
     } finally {
         if (btnText) hideLoading('btnText', originalText);
     }
+}
+
+// ─── Global "Yenile" handler ──────────────────────────────────────────────────
+// Single entry point for the header refresh button: updates market/FX data AND
+// the user's portfolio tables together, with a spinning-icon loading state.
+async function refreshAll() {
+    const btn = document.getElementById('globalRefreshBtn');
+    if (btn) { btn.disabled = true; btn.classList.add('refreshing'); }
+    try {
+        await refreshData();
+        if (sessionStorage.getItem('currentUser')) {
+            await Promise.all([
+                functionRegistry.renderPortfolioTable(),
+                functionRegistry.renderFxPortfolioTable(),
+            ]);
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.classList.remove('refreshing'); }
+    }
+}
+window.refreshAll = refreshAll;
+
+// ─── Single auto-refresh loop ─────────────────────────────────────────────────
+let autoRefreshInterval = null;
+function startAutoRefresh() {
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    autoRefreshInterval = setInterval(async () => {
+        await refreshData();
+        if (sessionStorage.getItem('currentUser')) {
+            functionRegistry.renderPortfolioTable();
+            functionRegistry.renderFxPortfolioTable();
+        }
+    }, 60000);
 }
 
 // ─── App initialization ───────────────────────────────────────────────────────
@@ -214,8 +245,14 @@ function initializeApp() {
             console.warn('ChartButtonManager initialization failed:', error);
         }
 
-        const refreshBtn = document.getElementById('refreshBtn');
-        if (refreshBtn) refreshBtn.addEventListener('click', refreshData);
+        const globalRefreshBtn = document.getElementById('globalRefreshBtn');
+        if (globalRefreshBtn) globalRefreshBtn.addEventListener('click', refreshAll);
+
+        // Wire the language toggle button (was never connected)
+        const langBtn = document.getElementById('langBtn');
+        if (langBtn && window.toggleLanguage) {
+            langBtn.addEventListener('click', () => window.toggleLanguage());
+        }
 
         const storedUser = sessionStorage.getItem('currentUser');
         if (storedUser) {
@@ -228,14 +265,19 @@ function initializeApp() {
             functionRegistry.renderFxPortfolioTable();
 
             console.log('✅ Portföy sistemi başlatıldı ve veriler yüklendi');
-
-            setInterval(() => {
-                if (sessionStorage.getItem('currentUser')) {
-                    functionRegistry.renderPortfolioTable();
-                    functionRegistry.renderFxPortfolioTable();
-                }
-            }, 30000);
         }
+
+        // i18n + initial data load + sorting (single boot path)
+        applyI18n();
+        refreshData().then(() => {
+            initSorting();
+            if (window.refreshSorting) window.refreshSorting();
+        });
+
+        // Single master auto-refresh loop (replaces the previously overlapping
+        // 15s FX / 30s portfolio / 60s data timers). refreshData() already
+        // refreshes stocks, FX, ticker and the currency table together.
+        startAutoRefresh();
 
         console.log('Application initialized successfully');
     } catch (error) {
@@ -273,11 +315,3 @@ if (document.readyState === 'loading') {
 }
 
 export { initializeApp, refreshData };
-
-// ─── Boot ─────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-    applyI18n();
-    initSorting();
-    refreshData();
-    setInterval(refreshData, 60000);
-});

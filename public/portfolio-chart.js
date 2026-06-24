@@ -228,19 +228,26 @@ class ChartManager {
             const prices = data.prices || [];
             if (prices.length < 2) return null;
 
-            const labels = prices.map(p => {
+            const locale = (typeof window !== 'undefined' && window.getCurrentLang && window.getCurrentLang() === 'en') ? 'en-US' : 'tr-TR';
+
+            // Build label/value pairs together, then filter in lockstep so the two
+            // arrays always stay the same length (mismatched arrays crash Chart.js).
+            const validLabels = [];
+            const validData = [];
+            for (const p of prices) {
                 const date = new Date(p.date || p.timestamp * 1000);
-                const locale = (typeof window !== 'undefined' && window.getCurrentLang && window.getCurrentLang()==='en') ? 'en-US' : 'tr-TR';
-                return date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
-            });
+                const label = date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
 
-            const chartData = prices.map(p => {
-                const value = p.close || p.price || 0;
-                return typeof value === 'number' ? value : parseFloat(value) || 0;
-            });
+                const rawValue = p.close || p.price || 0;
+                const value = typeof rawValue === 'number' ? rawValue : parseFloat(rawValue) || 0;
 
-            const validData = chartData.filter(v => !isNaN(v) && v !== null && v !== undefined);
-            const validLabels = labels.filter(l => l && l !== 'Invalid Date');
+                if (!label || label === 'Invalid Date') continue;
+                if (isNaN(value) || value === null || value === undefined) continue;
+
+                validLabels.push(label);
+                validData.push(value);
+            }
+
             if (validData.length < 2) return null;
             return { labels: validLabels, data: validData };
         } catch (error) {
@@ -339,6 +346,9 @@ function renderChart(container, prices, symbol) {
         container.appendChild(errorDiv);
         return;
     }
+    // Just enable the button here. The click handler is bound ONCE in
+    // showChartModal — re-binding on every render (e.g. range change) used to
+    // stack duplicate listeners, making the toggle cancel itself out.
     setTimeout(() => {
         if (chartManager && chartManager.isInitialized) {
             const fullscreenBtn = document.getElementById('chartFullscreenBtn');
@@ -346,19 +356,9 @@ function renderChart(container, prices, symbol) {
                 fullscreenBtn.disabled = false;
                 fullscreenBtn.style.opacity = '1';
                 fullscreenBtn.style.cursor = 'pointer';
-                fullscreenBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleChartFullscreen();
-                };
-                fullscreenBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleChartFullscreen();
-                }, { once: false });
             }
         }
-    }, 800);
+    }, 300);
 }
 
 export async function showChartModal(symbol, cleanSymbol, range = '1m') {
@@ -391,6 +391,8 @@ export async function showChartModal(symbol, cleanSymbol, range = '1m') {
             document.getElementById('closeChartBtn').onclick = closeChartModal;
         }
         if (fullscreenBtn) {
+            // cloneNode strips any previous listeners; bind exactly ONE handler
+            // via the onclick property so toggling can never stack/cancel out.
             fullscreenBtn.replaceWith(fullscreenBtn.cloneNode(true));
             const newFullscreenBtn = document.getElementById('chartFullscreenBtn');
             if (newFullscreenBtn) {
@@ -399,16 +401,6 @@ export async function showChartModal(symbol, cleanSymbol, range = '1m') {
                     e.stopPropagation();
                     toggleChartFullscreen();
                 };
-                newFullscreenBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleChartFullscreen();
-                }, { once: false });
-                newFullscreenBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleChartFullscreen();
-                }, { once: false });
             }
         }
         if (rangeSelect) {

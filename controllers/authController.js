@@ -3,9 +3,13 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const { getConnection, releaseConnection } = require('../services/databaseService');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangeEmail, sendAccountDeletionEmail } = require('../services/emailService');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Shared password complexity rule (matches register/reset validators):
+// at least one lowercase, one uppercase, one digit and one special character.
+const PASSWORD_COMPLEXITY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_.+=[\]{}|;:'"<>,/])/;
 
 
 // @desc    Register new user
@@ -35,14 +39,14 @@ exports.register = (req, res) => {
         if (err) {
             console.error('Database error:', err);
             releaseConnection(db);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Sunucu hatası' });
         }
         
         if (row) {
             // Fake bcrypt hash to prevent timing attacks
             await bcrypt.hash('fake-password-to-prevent-timing-attack', 12);
             releaseConnection(db);
-            return res.status(400).json({ message: 'Registration failed. Please check your information and try again.' });
+            return res.status(400).json({ message: 'Kayıt başarısız. Lütfen bilgilerinizi kontrol edip tekrar deneyin.' });
         }
 
         const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -51,25 +55,44 @@ exports.register = (req, res) => {
         bcrypt.hash(password, 12, (err, hashed) => {
             if (err) {
                 releaseConnection(db);
-                return res.status(500).json({ message: 'Password hashing failed' });
+                return res.status(500).json({ message: 'Şifre işlenemedi' });
             }
 
-            const sql = 'INSERT INTO users (name, surname, email, birthdate, username, password, email_verified, verification_token, token_expires) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)';
-            db.run(sql, [name, surname, email, birthdate, username, hashed, verificationToken, tokenExpires], function(err) {
+            // In development, auto-verify accounts so users can log in even when
+            // email delivery is unreliable (spam/SMTP issues). Production still
+            // requires email verification.
+            const autoVerify = process.env.NODE_ENV !== 'production';
+            const emailVerified = autoVerify ? 1 : 0;
+
+            const sql = 'INSERT INTO users (name, surname, email, birthdate, username, password, email_verified, verification_token, token_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            db.run(sql, [name, surname, email, birthdate, username, hashed, emailVerified, verificationToken, tokenExpires], function(err) {
                 if (err) {
                     releaseConnection(db);
-                    return res.status(500).json({ message: 'User registration failed' });
+                    return res.status(500).json({ message: 'Kullanıcı kaydı oluşturulamadı' });
                 }
                 const lastID = this.lastID;
+
+                if (autoVerify) {
+                    const verifyLink = `${require('../utils/envConfig').getBaseUrl()}/verify-email?token=${verificationToken}`;
+                    console.log('🔗 Verification Link (Development Mode):', verifyLink);
+                }
+
+                // Send the email but don't let its outcome block the response.
                 sendVerificationEmail(email, verificationToken, name)
                     .then(() => {
                         releaseConnection(db);
-                        res.json({ message: 'Registration successful! Please check your email.', userId: lastID });
+                        const message = autoVerify
+                            ? 'Kayıt başarılı! Giriş yapabilirsiniz.'
+                            : 'Kayıt başarılı! Lütfen e-postanızı kontrol edin.';
+                        res.json({ message, userId: lastID, autoVerified: autoVerify });
                     })
                     .catch((emailError) => {
                         console.error('Verification email error:', emailError);
                         releaseConnection(db);
-                        res.json({ message: 'Registered successfully, but verification email failed to send.', userId: lastID });
+                        const message = autoVerify
+                            ? 'Kayıt başarılı! Giriş yapabilirsiniz. (Doğrulama e-postası gönderilemedi)'
+                            : 'Kayıt başarılı, ancak doğrulama e-postası gönderilemedi.';
+                        res.json({ message, userId: lastID, autoVerified: autoVerify });
                     });
             });
         });
@@ -86,29 +109,31 @@ exports.login = (req, res) => {
         if (err) {
             console.error('Database error during login:', err);
             releaseConnection(db);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Sunucu hatası' });
         }
 
         if (!user) {
             releaseConnection(db);
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Kullanıcı adı veya şifre yanlış' });
         }
 
         if (user.email_verified === 0) {
             releaseConnection(db);
-            return res.status(401).json({ message: 'Please verify your email first' });
+            // The frontend (auth.js) looks for 'doğrulamanız gerekiyor' to show the
+            // "resend verification" notice — keep this exact phrase.
+            return res.status(401).json({ message: 'Giriş yapmadan önce e-posta adresinizi doğrulamanız gerekiyor.' });
         }
 
         bcrypt.compare(password, user.password, (err, valid) => {
             if (err) {
                 console.error('Bcrypt error:', err);
                 releaseConnection(db);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Sunucu hatası' });
             }
 
             if (!valid) {
                 releaseConnection(db);
-                return res.status(401).json({ message: 'Invalid credentials' });
+                return res.status(401).json({ message: 'Kullanıcı adı veya şifre yanlış' });
             }
 
             const token = jwt.sign(
@@ -139,7 +164,7 @@ exports.login = (req, res) => {
 exports.forgotPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ message: 'Invalid email address' });
+        return res.status(400).json({ message: 'Geçersiz e-posta adresi' });
     }
 
     const { email } = req.body;
@@ -149,11 +174,11 @@ exports.forgotPassword = async (req, res) => {
         if (err) {
             console.error('Database error:', err);
             releaseConnection(db);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Sunucu hatası' });
         }
 
         // Always return same response to prevent email enumeration
-        const genericMessage = 'If this email is registered, you will receive a password reset link.';
+        const genericMessage = 'Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir.';
 
         if (!user) {
             // Fake bcrypt to prevent timing attacks
@@ -172,7 +197,7 @@ exports.forgotPassword = async (req, res) => {
                 if (err) {
                     console.error('Token update error:', err);
                     releaseConnection(db);
-                    return res.status(500).json({ message: 'Internal server error' });
+                    return res.status(500).json({ message: 'Sunucu hatası' });
                 }
 
                 sendPasswordResetEmail(email, resetToken)
@@ -195,7 +220,7 @@ exports.forgotPassword = async (req, res) => {
 exports.resendVerification = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ message: 'Invalid email address' });
+        return res.status(400).json({ message: 'Geçersiz e-posta adresi' });
     }
 
     const { email } = req.body;
@@ -208,10 +233,10 @@ exports.resendVerification = async (req, res) => {
             if (err) {
                 console.error('Database error:', err);
                 releaseConnection(db);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Sunucu hatası' });
             }
 
-            const genericMessage = 'If this email is registered, a verification email has been sent.';
+            const genericMessage = 'Bu e-posta kayıtlıysa, doğrulama e-postası gönderilmiştir.';
 
             // If user not found or already verified, return generic response
             if (!user || user.email_verified === 1) {
@@ -231,7 +256,7 @@ exports.resendVerification = async (req, res) => {
                     if (updateErr) {
                         console.error('Token update error:', updateErr);
                         releaseConnection(db);
-                        return res.status(500).json({ message: 'Internal server error' });
+                        return res.status(500).json({ message: 'Sunucu hatası' });
                     }
 
                     const displayName = user.name || user.username;
@@ -257,32 +282,46 @@ exports.resendVerification = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+        return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
     }
 
     const { token, newPassword } = req.body;
     const db = getConnection();
 
     db.get(
-        'SELECT id FROM users WHERE verification_token = ? AND token_expires > ?',
+        'SELECT id, password FROM users WHERE verification_token = ? AND token_expires > ?',
         [token, Date.now()],
         (err, user) => {
             if (err) {
                 console.error('Database error:', err);
                 releaseConnection(db);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Sunucu hatası' });
             }
 
             if (!user) {
                 releaseConnection(db);
-                return res.status(400).json({ message: 'Invalid or expired reset token' });
+                return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş sıfırlama bağlantısı' });
             }
 
-            bcrypt.hash(newPassword, 12, (err, hashed) => {
+            // Prevent reusing the current password — guide the user to pick a new one.
+            bcrypt.compare(newPassword, user.password, (cmpErr, isSame) => {
+                if (cmpErr) {
+                    console.error('Bcrypt compare error:', cmpErr);
+                    releaseConnection(db);
+                    return res.status(500).json({ message: 'Şifre sıfırlanamadı' });
+                }
+                if (isSame) {
+                    releaseConnection(db);
+                    return res.status(400).json({
+                        message: 'Bu, mevcut şifrenizle aynı. Lütfen daha önce kullanmadığınız yeni bir şifre belirleyin.'
+                    });
+                }
+
+                bcrypt.hash(newPassword, 12, (err, hashed) => {
                 if (err) {
                     console.error('Bcrypt error:', err);
                     releaseConnection(db);
-                    return res.status(500).json({ message: 'Password reset failed' });
+                    return res.status(500).json({ message: 'Şifre sıfırlanamadı' });
                 }
 
                 db.run(
@@ -293,12 +332,13 @@ exports.resetPassword = async (req, res) => {
                         
                         if (err) {
                             console.error('Password update error:', err);
-                            return res.status(500).json({ message: 'Password reset failed' });
+                            return res.status(500).json({ message: 'Şifre sıfırlanamadı' });
                         }
 
-                        res.json({ message: 'Password reset successful. You can now login with your new password.' });
+                        res.json({ message: 'Şifreniz başarıyla sıfırlandı. Artık yeni şifrenizle giriş yapabilirsiniz.' });
                     }
                 );
+                });
             });
         }
     );
@@ -315,10 +355,10 @@ exports.getUserInfo = (req, res) => {
             releaseConnection(db);
             if (err) {
                 console.error('getUserInfo DB error:', err);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Sunucu hatası' });
             }
             if (!row) {
-                return res.status(404).json({ message: 'User not found' });
+                return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
             }
             res.json({
                 id: row.id,
@@ -340,7 +380,7 @@ exports.logout = (req, res) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
     });
-    res.json({ message: 'Logged out successfully' });
+    res.json({ message: 'Başarıyla çıkış yapıldı' });
 };
 
 // @desc    Verify email address via token link
@@ -438,6 +478,246 @@ exports.resetPasswordPage = (req, res) => {
 
             releaseConnection(db);
             res.send(generatePasswordResetForm(user.username, token));
+        }
+    );
+};
+
+// ── Helper: issue a short-lived action token for the logged-in user ──────────────
+function issueActionToken(req, res, actionType, sendEmailFn, okMessage) {
+    const db = getConnection();
+    db.get('SELECT id, email FROM users WHERE id = ?', [req.user.id], (err, user) => {
+        if (err) {
+            console.error('Action token DB error:', err);
+            releaseConnection(db);
+            return res.status(500).json({ message: 'Sunucu hatası' });
+        }
+        if (!user || !user.email) {
+            releaseConnection(db);
+            return res.status(400).json({ message: 'Hesabınızda kayıtlı bir e-posta bulunamadı' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+        db.run(
+            'UPDATE users SET action_token = ?, action_token_expires = ?, action_type = ? WHERE id = ?',
+            [token, expires, actionType, user.id],
+            (updateErr) => {
+                if (updateErr) {
+                    console.error('Action token update error:', updateErr);
+                    releaseConnection(db);
+                    return res.status(500).json({ message: 'Sunucu hatası' });
+                }
+
+                sendEmailFn(user.email, token)
+                    .then(() => {
+                        releaseConnection(db);
+                        res.json({ message: okMessage });
+                    })
+                    .catch((emailError) => {
+                        console.error('Action email error:', emailError);
+                        releaseConnection(db);
+                        res.json({ message: okMessage });
+                    });
+            }
+        );
+    });
+}
+
+// ── Helper: render an action page after validating its token/type/expiry ─────────
+function renderActionPage(req, res, actionType, renderFormFn) {
+    const { generateErrorPage } = require('../services/pageGenerator');
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).send(generateErrorPage(
+            'Geçersiz Bağlantı', '❌ Geçersiz Bağlantı', 'Doğrulama kodu eksik veya geçersiz.'
+        ));
+    }
+
+    const db = getConnection();
+    db.get(
+        'SELECT id FROM users WHERE action_token = ? AND action_type = ? AND action_token_expires > ?',
+        [token, actionType, Date.now()],
+        (err, user) => {
+            if (err) {
+                console.error('Action page DB error:', err);
+                releaseConnection(db);
+                return res.status(500).send('İşlem sırasında hata oluştu');
+            }
+            releaseConnection(db);
+            if (!user) {
+                return res.status(400).send(generateErrorPage(
+                    'Geçersiz Bağlantı', '❌ Geçersiz veya Süresi Dolmuş Bağlantı',
+                    'Bu doğrulama bağlantısı geçersiz veya süresi dolmuş.'
+                ));
+            }
+            res.send(renderFormFn(token));
+        }
+    );
+}
+
+// @desc    Show password-change form page (from email link)
+// @route   GET /verify-password-change?token=...
+exports.passwordChangePage = (req, res) => {
+    const { generatePasswordChangeForm } = require('../services/pageGenerator');
+    renderActionPage(req, res, 'password_change', generatePasswordChangeForm);
+};
+
+// @desc    Show account-deletion confirmation page (from email link)
+// @route   GET /verify-account-deletion?token=...
+exports.accountDeletionPage = (req, res) => {
+    const { generateAccountDeletionConfirm } = require('../services/pageGenerator');
+    renderActionPage(req, res, 'account_deletion', generateAccountDeletionConfirm);
+};
+
+// @desc    Request password change (sends verification token to email)
+// @route   POST /api/auth/request-password-change   (authenticated)
+exports.requestPasswordChange = (req, res) => {
+    issueActionToken(
+        req, res, 'password_change', sendPasswordChangeEmail,
+        'Doğrulama kodu e-posta adresinize gönderildi.'
+    );
+};
+
+// @desc    Verify password change with token and set new password
+// @route   POST /api/auth/verify-password-change
+// Authorization = single-use email action token + current password (NOT the
+// session cookie), so the email link also works when logged out / on another device.
+exports.verifyPasswordChange = (req, res) => {
+    const { token, currentPassword, newPassword } = req.body;
+
+    if (!token || !currentPassword || !newPassword || newPassword.length < 8) {
+        return res.status(400).json({ message: 'Geçersiz istek veya şifre çok kısa (en az 8 karakter)' });
+    }
+
+    // Enforce the same complexity rules as register/reset.
+    if (!PASSWORD_COMPLEXITY.test(newPassword)) {
+        return res.status(400).json({
+            message: 'Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir'
+        });
+    }
+
+    const db = getConnection();
+    db.get(
+        'SELECT id, password FROM users WHERE action_token = ? AND action_type = ? AND action_token_expires > ?',
+        [token, 'password_change', Date.now()],
+        (err, user) => {
+            if (err) {
+                console.error('Verify password change DB error:', err);
+                releaseConnection(db);
+                return res.status(500).json({ message: 'Sunucu hatası' });
+            }
+            if (!user) {
+                releaseConnection(db);
+                return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş doğrulama kodu' });
+            }
+
+            // Require the current password to be correct before changing it.
+            bcrypt.compare(currentPassword, user.password, (cmpErr, valid) => {
+                if (cmpErr) {
+                    console.error('Bcrypt compare error:', cmpErr);
+                    releaseConnection(db);
+                    return res.status(500).json({ message: 'Şifre değiştirilemedi' });
+                }
+                if (!valid) {
+                    releaseConnection(db);
+                    return res.status(401).json({ message: 'Mevcut şifreniz yanlış' });
+                }
+
+                // Block setting the same password as the current one.
+                if (newPassword === currentPassword) {
+                    releaseConnection(db);
+                    return res.status(400).json({
+                        message: 'Yeni şifre mevcut şifrenizle aynı olamaz. Lütfen farklı bir şifre belirleyin.'
+                    });
+                }
+
+                bcrypt.hash(newPassword, 12, (hashErr, hashed) => {
+                    if (hashErr) {
+                        console.error('Bcrypt error:', hashErr);
+                        releaseConnection(db);
+                        return res.status(500).json({ message: 'Şifre değiştirilemedi' });
+                    }
+                    db.run(
+                        'UPDATE users SET password = ?, action_token = NULL, action_token_expires = NULL, action_type = NULL WHERE id = ?',
+                        [hashed, user.id],
+                        (updateErr) => {
+                            releaseConnection(db);
+                            if (updateErr) {
+                                console.error('Password update error:', updateErr);
+                                return res.status(500).json({ message: 'Şifre değiştirilemedi' });
+                            }
+                            res.json({ message: 'Şifreniz başarıyla değiştirildi.' });
+                        }
+                    );
+                });
+            });
+        }
+    );
+};
+
+// @desc    Request account deletion (sends verification token to email)
+// @route   POST /api/auth/request-account-deletion   (authenticated)
+exports.requestAccountDeletion = (req, res) => {
+    issueActionToken(
+        req, res, 'account_deletion', sendAccountDeletionEmail,
+        'Hesap silme doğrulama kodu e-posta adresinize gönderildi.'
+    );
+};
+
+// @desc    Verify account deletion with token and delete the account
+// @route   POST /api/auth/verify-account-deletion
+// Authorization = single-use email action token + account password (NOT the
+// session cookie), so the email link also works when logged out / on another device.
+exports.verifyAccountDeletion = (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ message: 'Doğrulama kodu ve şifre gereklidir' });
+    }
+
+    const db = getConnection();
+    db.get(
+        'SELECT id, password FROM users WHERE action_token = ? AND action_type = ? AND action_token_expires > ?',
+        [token, 'account_deletion', Date.now()],
+        (err, user) => {
+            if (err) {
+                console.error('Verify account deletion DB error:', err);
+                releaseConnection(db);
+                return res.status(500).json({ message: 'Sunucu hatası' });
+            }
+            if (!user) {
+                releaseConnection(db);
+                return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş doğrulama kodu' });
+            }
+
+            // Require the account password before permanently deleting.
+            bcrypt.compare(password, user.password, (cmpErr, valid) => {
+                if (cmpErr) {
+                    console.error('Bcrypt compare error:', cmpErr);
+                    releaseConnection(db);
+                    return res.status(500).json({ message: 'Hesap silinemedi' });
+                }
+                if (!valid) {
+                    releaseConnection(db);
+                    return res.status(401).json({ message: 'Şifreniz yanlış' });
+                }
+
+                db.run('DELETE FROM users WHERE id = ?', [user.id], (delErr) => {
+                    releaseConnection(db);
+                    if (delErr) {
+                        console.error('Account deletion error:', delErr);
+                        return res.status(500).json({ message: 'Hesap silinemedi' });
+                    }
+                    res.clearCookie('authToken', {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'strict'
+                    });
+                    res.json({ message: 'Hesabınız kalıcı olarak silindi.' });
+                });
+            });
         }
     );
 };
