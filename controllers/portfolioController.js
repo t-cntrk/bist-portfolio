@@ -26,18 +26,55 @@ exports.addAsset = (req, res) => {
     const userId = req.user.id;
     const db = getConnection();
 
-    const sql = 'INSERT INTO portfolios (user_id, symbol, quantity, purchase_price, type) VALUES (?, ?, ?, ?, ?)';
-    
-    db.run(sql, [userId, symbol, quantity, purchase, type], function(err) {
-        if (err) {
-            if (err.code === 'SQLITE_CONSTRAINT') {
-                return res.status(400).json({ message: 'Bu hisse zaten portföyünüzde mevcut' });
+    // Buying more of an asset already held is a valid action, not a duplicate.
+    // If the user already holds this symbol+type, merge the buy into the existing
+    // position: sum the quantity and recompute the weighted-average purchase price.
+    // Scoped by user_id, so other users' identical symbols are untouched; a
+    // different `type` for the same symbol is a separate position.
+    db.get(
+        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
+        [userId, symbol, type],
+        (selErr, existing) => {
+            if (selErr) {
+                console.error('Portfolio lookup error:', selErr);
+                return res.status(500).json({ message: 'Portföy eklenemedi' });
             }
-            console.error('Portfolio insert error:', err);
-            return res.status(500).json({ message: 'Portföy eklenemedi' });
+
+            if (existing) {
+                const totalQuantity = existing.quantity + quantity;
+                const avgPrice = ((existing.purchase_price * existing.quantity) + (purchase * quantity)) / totalQuantity;
+                db.run(
+                    'UPDATE portfolios SET quantity = ?, purchase_price = ? WHERE id = ? AND user_id = ?',
+                    [totalQuantity, avgPrice, existing.id, userId],
+                    (updErr) => {
+                        if (updErr) {
+                            console.error('Portfolio update error:', updErr);
+                            return res.status(500).json({ message: 'Portföy güncellenemedi' });
+                        }
+                        return res.json({ id: existing.id, merged: true, quantity: totalQuantity, purchase_price: avgPrice });
+                    }
+                );
+                return;
+            }
+
+            db.run(
+                'INSERT INTO portfolios (user_id, symbol, quantity, purchase_price, type) VALUES (?, ?, ?, ?, ?)',
+                [userId, symbol, quantity, purchase, type],
+                function (insErr) {
+                    if (insErr) {
+                        // The UNIQUE index still guards against a concurrent insert
+                        // racing the lookup above.
+                        if (insErr.code === 'SQLITE_CONSTRAINT') {
+                            return res.status(409).json({ message: 'Bu varlık az önce eklendi, lütfen tekrar deneyin' });
+                        }
+                        console.error('Portfolio insert error:', insErr);
+                        return res.status(500).json({ message: 'Portföy eklenemedi' });
+                    }
+                    return res.json({ id: this.lastID });
+                }
+            );
         }
-        res.json({ id: this.lastID });
-    });
+    );
 };
 // @desc    Remove an asset from portfolio
 // @route   DELETE /api/portfolio/:id

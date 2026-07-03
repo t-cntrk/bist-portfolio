@@ -15,7 +15,21 @@ const mockDb = {
             .map(({ id, symbol, quantity, purchase_price, type }) => ({ id, symbol, quantity, purchase_price, type }));
         cb(null, rows);
     },
+    get(sql, params, cb) {
+        // addAsset lookup: WHERE user_id = ? AND symbol = ? AND type = ?
+        const [userId, symbol, type] = params;
+        const row = mockStore.rows.find(r => r.user_id === userId && r.symbol === symbol && r.type === type);
+        cb(null, row);
+    },
     run(sql, params, cb) {
+        if (/^\s*UPDATE/i.test(sql)) {
+            const [quantity, purchase_price, id, userId] = params;
+            const row = mockStore.rows.find(r => r.id === id && r.user_id === userId);
+            if (!row) return cb.call({ changes: 0 }, null);
+            row.quantity = quantity;
+            row.purchase_price = purchase_price;
+            return cb.call({ changes: 1 }, null);
+        }
         if (/^\s*INSERT/i.test(sql)) {
             const [user_id, symbol, quantity, purchase_price, type] = params;
             const dup = mockStore.rows.find(r => r.user_id === user_id && r.symbol === symbol && r.type === type);
@@ -164,10 +178,53 @@ describe('portfolio — symbol / type validation', () => {
         const res = await addAsset(1, { symbol: 'THYAO.IS', quantity: 1, purchase: 1, type: 'crypto' });
         expect(res.status).toBe(400);
     });
-    test('duplicate (same user+symbol+type) → 400', async () => {
-        await addAsset(1, VALID);
-        const dup = await addAsset(1, VALID);
-        expect(dup.status).toBe(400);
+});
+
+describe('portfolio — repeated buys merge with weighted average', () => {
+    test('buying more of the same symbol+type sums quantity and averages price', async () => {
+        const first = await addAsset(1, { symbol: 'USDTRY=X', quantity: 50, purchase: 50, type: 'fx' });
+        expect(first.status).toBe(200);
+
+        const second = await addAsset(1, { symbol: 'USDTRY=X', quantity: 30, purchase: 30, type: 'fx' });
+        expect(second.status).toBe(200);
+
+        // Same position updated in place (no new row, same id)
+        expect(second.body.id).toBe(first.body.id);
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(1);
+
+        const pos = list.body[0];
+        expect(pos.quantity).toBe(80);                 // 50 + 30
+        expect(pos.purchase_price).toBeCloseTo(42.5, 6); // (50*50 + 30*30) / 80
+    });
+
+    test("another user's identical symbol is not affected by the merge", async () => {
+        await addAsset(1, { symbol: 'THYAO.IS', quantity: 10, purchase: 100, type: 'stock' });
+        await addAsset(2, { symbol: 'THYAO.IS', quantity: 5, purchase: 200, type: 'stock' });
+        // User 1 buys more
+        await addAsset(1, { symbol: 'THYAO.IS', quantity: 10, purchase: 300, type: 'stock' });
+
+        const list1 = await getPortfolio(1);
+        expect(list1.body).toHaveLength(1);
+        expect(list1.body[0].quantity).toBe(20);                 // 10 + 10
+        expect(list1.body[0].purchase_price).toBeCloseTo(200, 6); // (100*10 + 300*10)/20
+
+        const list2 = await getPortfolio(2);
+        expect(list2.body).toHaveLength(1);
+        expect(list2.body[0].quantity).toBe(5);                  // untouched
+        expect(list2.body[0].purchase_price).toBe(200);
+    });
+
+    test('same symbol with a different type stays a separate position', async () => {
+        await addAsset(1, { symbol: 'GC=F', quantity: 2, purchase: 1000, type: 'fx' });
+        await addAsset(1, { symbol: 'GC=F', quantity: 3, purchase: 2000, type: 'stock' });
+
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(2);
+        const fx = list.body.find(r => r.type === 'fx');
+        const stock = list.body.find(r => r.type === 'stock');
+        expect(fx.quantity).toBe(2);
+        expect(stock.quantity).toBe(3);
     });
 });
 
