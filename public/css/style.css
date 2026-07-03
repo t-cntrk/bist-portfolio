@@ -4558,3 +4558,40 @@ table td[data-label="MIKTAR"] {
 .new-portfolio-container .new-portfolio-table td[data-label="KAR/ZARAR (%)"] {
     text-align: center !important;
 }
+
+/* ============================================================
+   Login screen: static styles moved from inline style="" (round 1, CSP prep).
+   Property values are identical to the previous inline styles — no visual
+   change. Accent gradient uses design tokens for consistency.
+   ============================================================ */
+.subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-green));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+}
+.divider {
+    text-align: center;
+    margin: 25px 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    position: relative;
+}
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+}
