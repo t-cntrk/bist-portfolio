@@ -83,6 +83,13 @@ function initializeDatabase() {
     // permanent history. transaction_type defaults to 'buy' today but the column
     // exists so sells, realized P/L, filtering, export and analytics can be added
     // later without a schema change.
+    //
+    // `currency` is the currency the monetary amounts (unit_price, total_amount)
+    // are denominated in — captured explicitly at write time so history stays
+    // correct even if a symbol's pricing convention changes. `executed_at` is the
+    // actual trade time, kept separate from `created_at` (the immutable insert /
+    // audit stamp) so a future import path can record historical trades without
+    // rewriting when the row was actually persisted.
     db.run(`CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -92,7 +99,9 @@ function initializeDatabase() {
       quantity REAL NOT NULL,
       unit_price REAL NOT NULL,
       total_amount REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'TRY',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      executed_at DATETIME,
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )`, (err) => {
       if (err) {
@@ -154,6 +163,36 @@ function initializeDatabase() {
       } else {
         console.log('Portfolio unique constraint ensured');
       }
+    });
+
+    // Explicit per-transaction currency for the amount columns. Added nullable so
+    // the ALTER works on existing tables, then backfilled once: GC=F (gold ounce
+    // futures) is quoted in USD, everything else on the platform settles in TRY.
+    // The IS NULL guards make both backfills self-limiting — they touch only
+    // pre-migration rows and no-op on every boot thereafter, since the write path
+    // always sets currency going forward.
+    db.run(`ALTER TABLE transactions ADD COLUMN currency TEXT`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding currency column:', err);
+      }
+    });
+    db.run(`UPDATE transactions SET currency = 'USD' WHERE currency IS NULL AND symbol = 'GC=F'`, (err) => {
+      if (err) console.error('Error backfilling USD currency:', err);
+    });
+    db.run(`UPDATE transactions SET currency = 'TRY' WHERE currency IS NULL`, (err) => {
+      if (err) console.error('Error backfilling TRY currency:', err);
+    });
+
+    // Actual trade time, separate from created_at (the insert/audit stamp). For
+    // existing rows there is no distinct trade time, so seed executed_at from
+    // created_at — a behavior-neutral backfill. IS NULL keeps it self-limiting.
+    db.run(`ALTER TABLE transactions ADD COLUMN executed_at DATETIME`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding executed_at column:', err);
+      }
+    });
+    db.run(`UPDATE transactions SET executed_at = created_at WHERE executed_at IS NULL`, (err) => {
+      if (err) console.error('Error backfilling executed_at:', err);
     });
 
     // Speeds up per-user (and per-symbol) transaction-history reads.
