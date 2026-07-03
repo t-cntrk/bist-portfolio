@@ -104,7 +104,7 @@ Manually flush the in-memory and disk cache to force a refresh on next request
 
 ### Current Status
 ```bash
-curl http://localhost:3000/api/stocks
+curl http://localhost:3100/api/stocks
 ```
 Returns: 15 stocks with live Yahoo Finance data (or `"source":"mock"` if unavailable)
 

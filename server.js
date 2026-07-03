@@ -63,7 +63,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3100;
 
 // Trust the first proxy hop (nginx / Docker ingress / Vercel) so req.secure and
 // client IPs (used by rate limiting) are evaluated correctly behind a proxy.

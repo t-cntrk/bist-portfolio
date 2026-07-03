@@ -49,7 +49,7 @@ The server caches quotes for 30 minutes (configurable via `STOCK_CACHE_TTL` env 
 ## Testing
 
 ```bash
-curl http://localhost:3000/api/stocks
+curl http://localhost:3100/api/stocks
 ```
 
 Look for `"source":"yahoo"` in the response to confirm live data is being used.
@@ -57,5 +57,5 @@ Look for `"source":"yahoo"` in the response to confirm live data is being used.
 ## Troubleshooting
 
 - **Still seeing "mock" data**: Check server logs for API errors; Yahoo may be rate-limiting
-- **Prices not updating**: Force a cache clear: `curl -X POST http://localhost:3000/api/stocks/clear-cache`
+- **Prices not updating**: Force a cache clear: `curl -X POST http://localhost:3100/api/stocks/clear-cache`
 - **Rate limiting from Yahoo**: Handled automatically with retry and exponential backoff

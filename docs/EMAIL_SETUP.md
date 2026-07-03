@@ -20,7 +20,7 @@ The error you're seeing is because Gmail requires special authentication. Here a
 ```env
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-16-character-app-password
-BASE_URL=http://localhost:3000
+BASE_URL=http://localhost:3100
 NODE_ENV=development
 ```
 
@@ -42,7 +42,7 @@ EMAIL_USER=your-email@gmail.com
 GMAIL_CLIENT_ID=your-client-id
 GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=your-refresh-token
-BASE_URL=http://localhost:3000
+BASE_URL=http://localhost:3100
 NODE_ENV=development
 ```
 
@@ -54,7 +54,7 @@ If you just want to test without sending real emails, the system will automatica
 
 After setup, test the email functionality:
 ```bash
-curl http://localhost:3000/test-email
+curl http://localhost:3100/test-email
 ```
 
 ## Setup Script

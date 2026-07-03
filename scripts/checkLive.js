@@ -1,5 +1,5 @@
 (async () => {
-  const url = 'http://localhost:3000/api/stocks';
+  const url = 'http://localhost:3100/api/stocks';
   let found = false;
   for (let i = 0; i < 10; i++) {
     try {

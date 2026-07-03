@@ -62,7 +62,7 @@ Your Response (always fast, always available)
 - A: Edit `.env` and add: `USE_MOCK_DATA=true`
 
 **Q: Force a cache refresh**
-- A: `curl -X POST http://localhost:3000/api/stocks/clear-cache`
+- A: `curl -X POST http://localhost:3100/api/stocks/clear-cache`
 
 ## Configuration Options
 

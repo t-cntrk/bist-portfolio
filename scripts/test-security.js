@@ -9,7 +9,7 @@ console.log('==============================================\n');
 
 // Test configuration
 const TEST_CONFIG = {
-  baseUrl: 'http://localhost:3000',
+  baseUrl: 'http://localhost:3100',
   testTimeout: 5000
 };
 
@@ -68,7 +68,7 @@ const testSqlInjection = runTest('SQL Injection Prevention', async () => {
   
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/portfolio',
     method: 'POST',
     headers: {
@@ -92,7 +92,7 @@ const testSqlInjection = runTest('SQL Injection Prevention', async () => {
 const testCORS = runTest('CORS Configuration', async () => {
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/stocks',
     method: 'GET',
     headers: {
@@ -114,7 +114,7 @@ const testRateLimiting = runTest('Rate Limiting', async () => {
   for (let i = 0; i < 31; i++) {
     requests.push(makeRequest({
       hostname: 'localhost',
-      port: 3000,
+      port: 3100,
       path: '/api/stocks/fx',
       method: 'GET'
     }));
@@ -132,7 +132,7 @@ const testRateLimiting = runTest('Rate Limiting', async () => {
 const testJWTValidation = runTest('JWT Secret Validation', async () => {
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/auth/login',
     method: 'POST',
     headers: {
@@ -153,7 +153,7 @@ const testJWTValidation = runTest('JWT Secret Validation', async () => {
 const testCSRFProtection = runTest('CSRF Protection', async () => {
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/auth/register',
     method: 'POST',
     headers: {
@@ -180,7 +180,7 @@ const testXSSPrevention = runTest('XSS Prevention', async () => {
   
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/portfolio',
     method: 'POST',
     headers: {
@@ -204,7 +204,7 @@ const testXSSPrevention = runTest('XSS Prevention', async () => {
 const testErrorHandling = runTest('Error Handling', async () => {
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/api/nonexistent-endpoint',
     method: 'GET'
   });
@@ -219,7 +219,7 @@ const testErrorHandling = runTest('Error Handling', async () => {
 const testSecurityHeaders = runTest('Security Headers', async () => {
   const response = await makeRequest({
     hostname: 'localhost',
-    port: 3000,
+    port: 3100,
     path: '/',
     method: 'GET'
   });
@@ -281,14 +281,14 @@ async function checkServer() {
   try {
     await makeRequest({
       hostname: 'localhost',
-      port: 3000,
+      port: 3100,
       path: '/test',
       method: 'GET'
     });
-    console.log('✅ Server is running on localhost:3000\n');
+    console.log('✅ Server is running on localhost:3100\n');
     return true;
   } catch (error) {
-    console.log('❌ Server is not running on localhost:3000');
+    console.log('❌ Server is not running on localhost:3100');
     console.log('Please start the server with: npm start\n');
     return false;
   }

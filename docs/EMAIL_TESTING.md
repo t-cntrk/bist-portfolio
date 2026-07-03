@@ -36,16 +36,16 @@ email-templates/
 #### 1. **Test E-postası Gönderme**
 ```bash
 # PowerShell
-Invoke-WebRequest -Uri "http://localhost:3000/test-email" -Method GET
+Invoke-WebRequest -Uri "http://localhost:3100/test-email" -Method GET
 
 # veya tarayıcıda
-http://localhost:3000/test-email
+http://localhost:3100/test-email
 ```
 
 #### 2. **Şifre Sıfırlama Testi**
 ```bash
 # PowerShell
-Invoke-WebRequest -Uri "http://localhost:3000/api/auth/forgot" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"your-email@gmail.com"}'
+Invoke-WebRequest -Uri "http://localhost:3100/api/auth/forgot" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"your-email@gmail.com"}'
 
 # veya uygulamada
 # "Şifremi Unuttum" → E-posta gir → "Gönder"
@@ -156,7 +156,7 @@ table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
 
 Sorun yaşarsanız:
 - 📧 **E-posta**: destek@borsaportal.com
-- 🔧 **Test Endpoint**: http://localhost:3000/test-email
+- 🔧 **Test Endpoint**: http://localhost:3100/test-email
 - 📖 **Log Dosyaları**: Server console çıktısını kontrol edin
 
 ---

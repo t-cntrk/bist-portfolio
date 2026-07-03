@@ -12,7 +12,7 @@ const path = require('path');
 
 // Test configuration
 const TEST_CONFIG = {
-  baseUrl: process.env.TEST_URL || 'http://localhost:3000',
+  baseUrl: process.env.TEST_URL || 'http://localhost:3100',
   timeout: 10000,
   retries: 3
 };
@@ -302,7 +302,7 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   log('BIST Stocks Dashboard - Regression Test Suite', 'blue');
   log('Usage: node test-regression.js [options]', 'blue');
   log('Options:', 'blue');
-  log('  --url <url>     Test URL (default: http://localhost:3000)', 'blue');
+  log('  --url <url>     Test URL (default: http://localhost:3100)', 'blue');
   log('  --timeout <ms>  Request timeout in milliseconds (default: 10000)', 'blue');
   log('  --help, -h      Show this help message', 'blue');
   process.exit(0);

@@ -32,10 +32,10 @@ console.log('5. Copy the 16-character password');
 console.log('\n📝 Create .env file with:');
 console.log('EMAIL_USER=your_gmail@gmail.com');
 console.log('EMAIL_PASS=your_gmail_app_password');
-console.log('BASE_URL=http://localhost:3000');
+console.log('BASE_URL=http://localhost:3100');
 console.log('NODE_ENV=development');
 
 console.log('\n🧪 Test email functionality:');
-console.log('curl http://localhost:3000/test-email');
+console.log('curl http://localhost:3100/test-email');
 
 console.log('\n📖 For detailed instructions, see docs/EMAIL_SETUP.md');

@@ -60,7 +60,7 @@ proxy/
    npm start
    ```
 
-6. Open `http://localhost:3000` in your browser.
+6. Open `http://localhost:3100` in your browser.
 
 ## Scripts
 
