@@ -129,8 +129,6 @@ export async function fetchCurrencyData(retryCount = 0, forceRefresh = false) {
         }
         
         const raw = await response.json();
-        // Flag mock/stale data so users don't mistake placeholder or cached rates for live ones.
-        renderDataQualityBadge(document.querySelector('.currency-section .section-title'), computeDataQuality(Array.isArray(raw) ? raw : []));
         // Backend returns array; normalize to object keyed by symbol
         const fxData = Array.isArray(raw) ? Object.fromEntries((raw || []).map(d => [d.symbol, d])) : (raw || {});
         
@@ -190,6 +188,11 @@ async function addFxToPortfolio(fxName, quantity, price) {
 
 export function updateCurrencyDisplay(fxData) {
     try {
+        // Keep the data-quality badge in sync on EVERY update — including the
+        // app.js master refresh loop, which updates prices but previously left a
+        // stale "mock" badge showing after live data had arrived.
+        renderDataQualityBadge(document.querySelector('.currency-section .section-title'), computeDataQuality(Object.values(fxData || {})));
+
         // SAFETY CHECK: Ensure table structure is intact
         const currencyTable = document.querySelector('.currency-section .stocks-container table');
         if (!currencyTable) {

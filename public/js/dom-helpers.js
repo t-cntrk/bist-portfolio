@@ -189,10 +189,10 @@ export function renderDataQualityBadge(container, quality) {
     if (quality === 'mock') {
         badge.classList.remove('is-stale');
         badge.classList.add('is-mock');
-        badge.textContent = isEn ? '● Demo data' : '● Demo veri';
+        badge.textContent = isEn ? '● Refreshing…' : '● Veri tazeleniyor';
         badge.title = isEn
-            ? 'Live source unavailable — showing placeholder prices'
-            : 'Canlı veri kaynağına ulaşılamadı — örnek fiyatlar gösteriliyor';
+            ? 'Loading live data — showing placeholder prices for now'
+            : 'Canlı veriler yükleniyor — şimdilik örnek fiyatlar gösteriliyor';
     } else { // 'stale'
         badge.classList.remove('is-mock');
         badge.classList.add('is-stale');
