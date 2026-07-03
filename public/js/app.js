@@ -77,6 +77,10 @@ function setupEventDelegation() {
                 functionRegistry.showChartModal(symbol, cleanSymbol, '1m');
             }
         },
+        '.fx-retry-btn': () => {
+            // Retry loading FX data from the currency-table error state.
+            if (window.fetchCurrencyData) window.fetchCurrencyData();
+        },
         '#closeChartBtn': () => functionRegistry.closeChartModal()
         // NOTE: #chartFullscreenBtn is intentionally NOT delegated here.
         // It is bound directly (onclick) in portfolio-chart.js/showChartModal.

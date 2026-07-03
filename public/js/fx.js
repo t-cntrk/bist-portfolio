@@ -71,7 +71,7 @@ function showFxError(message) {
             <div style="text-align: center; padding: 40px; color: #ef4444;">
                 <div style="font-size: 48px; margin-bottom: 16px;">💱</div>
                 <div style="font-size: 16px; margin-bottom: 16px;">${message}</div>
-                <button onclick="window.fetchCurrencyData()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                <button type="button" class="fx-retry-btn" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
                     Tekrar Dene
                 </button>
             </div>
