@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
-const { validateCSRF, authLimiter, forgotPasswordLimiter, authenticateToken, handleValidationErrors } = require('../middleware/securityMiddleware');
+const { validateCSRF, authLimiter, forgotPasswordLimiter, authenticateToken, handleValidationErrors, generalLimiter } = require('../middleware/securityMiddleware');
+const { PASSWORD_COMPLEXITY, PASSWORD_COMPLEXITY_MESSAGE } = require('../utils/passwordPolicy');
 
 const registerValidation = [
     body('name')
@@ -36,8 +37,8 @@ const registerValidation = [
         .isLength({ min: 8 })
         .withMessage('Şifre en az 8 karakter olmalıdır')
         // Lookahead: uppercase, lowercase, digit, any common special char
-        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_.+=[\]{}|;:'"<>,/])/)
-        .withMessage('Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir')
+        .matches(PASSWORD_COMPLEXITY)
+        .withMessage(PASSWORD_COMPLEXITY_MESSAGE)
 ];
 /**
  * @route   POST /api/auth/register
@@ -74,8 +75,8 @@ router.post('/reset-password', authLimiter, [
     body('newPassword')
         .isLength({ min: 8 })
         .withMessage('Şifre en az 8 karakter olmalıdır')
-        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_.+=[\]{}|;:'"<>,/])/)
-        .withMessage('Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir')
+        .matches(PASSWORD_COMPLEXITY)
+        .withMessage(PASSWORD_COMPLEXITY_MESSAGE)
 ], authController.resetPassword);
 
 /**
@@ -96,7 +97,7 @@ router.get('/userinfo', authenticateToken, authController.getUserInfo);
  * @route   POST /api/auth/logout
  * @desc    Logout user and clear cookie
  */
-router.post('/logout', authController.logout);
+router.post('/logout', generalLimiter, authController.logout);
 
 /**
  * @route   POST /api/auth/request-password-change

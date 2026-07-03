@@ -12,6 +12,19 @@ if (process.env.NODE_ENV === 'production') {
     console.error('FATAL: In production, JWT_SECRET must be set and at least 16 characters.');
     process.exit(1);
   }
+  // COOKIE_SECRET signs the CSRF session cookie; a weak/default value makes the
+  // session forgeable, so enforce it just like JWT_SECRET.
+  const cookieSecret = process.env.COOKIE_SECRET;
+  if (!cookieSecret || typeof cookieSecret !== 'string' || cookieSecret.length < 16) {
+    console.error('FATAL: In production, COOKIE_SECRET must be set and at least 16 characters.');
+    process.exit(1);
+  }
+} else if (!process.env.JWT_SECRET) {
+  // Dev convenience: without this, jwt.sign(payload, undefined) throws and login
+  // 500s on a fresh checkout that forgot to set JWT_SECRET. Never used in prod
+  // (the block above hard-fails there instead).
+  process.env.JWT_SECRET = 'dev-only-insecure-jwt-secret-change-me';
+  console.warn('⚠️  JWT_SECRET not set — using an insecure development default. Set JWT_SECRET in .env for real use.');
 }
 
 // Import services and middleware
@@ -24,7 +37,8 @@ const {
   enforceHTTPS, 
   contentSecurityPolicy, 
   handleCSPViolation, 
-  errorLogging 
+  errorLogging,
+  generalLimiter
 } = require('./middleware/securityMiddleware');
 const { errorMiddleware } = require('./utils/errorHandler');
 
@@ -53,7 +67,9 @@ const PORT = process.env.PORT || 3000;
 
 // Trust the first proxy hop (nginx / Docker ingress / Vercel) so req.secure and
 // client IPs (used by rate limiting) are evaluated correctly behind a proxy.
-app.set('trust proxy', 1);
+// Only in production: trusting XFF when NOT behind a proxy would let clients
+// spoof their IP and bypass per-IP rate limits.
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
 const allowedOrigins = getAllowedOrigins();
 
@@ -104,9 +120,11 @@ app.use((err, req, res, next) => {
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-cookie-secret';
 app.use(cookieParser(COOKIE_SECRET));
 
-// Body parsers
-app.use(express.json({ limit: '10mb', type: ['application/json', 'application/csp-report'] }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsers. 1mb is ample for this API's JSON payloads (auth, portfolio,
+// CSP/error reports); the old 10mb limit was needless DoS surface on the
+// unauthenticated endpoints.
+app.use(express.json({ limit: '1mb', type: ['application/json', 'application/csp-report'] }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Security middleware
 app.use(securityHeaders);
@@ -150,7 +168,7 @@ app.get('/', (req, res) => {
 // ============================================
 
 // CSRF token generation
-app.get('/api/csrf-token', (req, res) => {
+app.get('/api/csrf-token', generalLimiter, (req, res) => {
   const token = generateCSRFToken();
   const sessionId = (req.signedCookies && req.signedCookies.sessionId) || 
                     req.cookies.sessionId || 
@@ -201,7 +219,7 @@ app.post('/api/csp-report', (req, res) => {
 });
 
 // Client-side error logging
-app.post('/api/error-log', (req, res) => {
+app.post('/api/error-log', generalLimiter, (req, res) => {
   try {
     const errorLog = req.body;
     
@@ -262,14 +280,13 @@ if (process.env.NODE_ENV !== 'production') {
 // Token debug endpoint (development only)
 if (process.env.NODE_ENV === 'development') {
   app.get('/debug-tokens', (req, res) => {
-    const { getConnection, releaseConnection } = require('./services/databaseService');
+    const { getConnection } = require('./services/databaseService');
     const db = getConnection();
     
     db.all(
       'SELECT id, username, email, verification_token, token_expires, datetime(token_expires/1000, "unixepoch") as expires_date FROM users WHERE verification_token IS NOT NULL', 
       (err, rows) => {
         if (err) {
-          releaseConnection(db);
           return res.status(500).json({ error: err.message });
         }
         
@@ -287,7 +304,6 @@ if (process.env.NODE_ENV === 'development') {
             : 0
         }));
         
-        releaseConnection(db);
         res.json({
           currentTime: new Date(currentTime).toISOString(),
           tokens: tokens

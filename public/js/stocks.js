@@ -5,7 +5,7 @@
 import { createApiRequest, handleApiResponse } from './api.js';
 import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './notifications.js';
 import { formatTime, formatVolume } from './formatters.js';
-import { safeGetElementById, escapeHtml } from './dom-helpers.js';
+import { safeGetElementById, escapeHtml, computeDataQuality, renderDataQualityBadge } from './dom-helpers.js';
 import { AppState } from './state.js';
 
 let isLoading = false;
@@ -150,6 +150,9 @@ export async function fetchAllStocks() {
         const stocksData = await handleApiResponse(response);
 
         if (!Array.isArray(stocksData)) throw new Error('Invalid data format received');
+
+        // Flag mock/stale data so users don't mistake placeholder or cached prices for live ones.
+        renderDataQualityBadge(document.querySelector('.sorting-controls'), computeDataQuality(stocksData));
 
         // Keep AppState in sync so sorting.js has data to work with
         const normalizedStocks = stocksData.map(s => ({ symbol: s.symbol, ...(s.data || s) }));

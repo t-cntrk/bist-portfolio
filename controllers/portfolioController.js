@@ -1,4 +1,4 @@
-const { getConnection, releaseConnection } = require('../services/databaseService');
+const { getConnection } = require('../services/databaseService');
 
 // @desc    Get user's complete portfolio
 // @route   GET /api/portfolio
@@ -10,7 +10,6 @@ exports.getPortfolio = (req, res) => {
     const sql = 'SELECT id, symbol, quantity, purchase_price, type FROM portfolios WHERE user_id = ?';
     
     db.all(sql, [userId], (err, rows) => {
-        releaseConnection(db);
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ message: 'Portföy verileri alınamadı' });
@@ -30,7 +29,6 @@ exports.addAsset = (req, res) => {
     const sql = 'INSERT INTO portfolios (user_id, symbol, quantity, purchase_price, type) VALUES (?, ?, ?, ?, ?)';
     
     db.run(sql, [userId, symbol, quantity, purchase, type], function(err) {
-        releaseConnection(db);
         if (err) {
             if (err.code === 'SQLITE_CONSTRAINT') {
                 return res.status(400).json({ message: 'Bu hisse zaten portföyünüzde mevcut' });
@@ -50,7 +48,6 @@ exports.deleteAsset = (req, res) => {
 
     // Safety: Only delete if the asset belongs to the requesting user
     db.run('DELETE FROM portfolios WHERE id = ? AND user_id = ?', [assetId, userId], function(err) {
-        releaseConnection(db);
         if (err) {
             return res.status(500).json({ message: 'Silme işlemi başarısız' });
         }

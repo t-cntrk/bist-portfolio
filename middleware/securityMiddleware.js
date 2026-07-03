@@ -2,6 +2,7 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const { getBaseUrl } = require('../utils/envConfig');
 
 // ============================================
 // VALIDATION RESULT HANDLER
@@ -29,7 +30,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Session-based CSRF token storage
 const csrfTokens = new Map();
 
-// Clean up old CSRF tokens every hour
+// Clean up old CSRF tokens every hour. unref() so this timer never keeps the
+// process (or a Jest run) alive on its own.
 setInterval(() => {
   const now = Date.now();
   for (const [sessionId, tokenData] of csrfTokens.entries()) {
@@ -37,7 +39,7 @@ setInterval(() => {
       csrfTokens.delete(sessionId);
     }
   }
-}, 60 * 60 * 1000);
+}, 60 * 60 * 1000).unref();
 
 // Generate CSRF token
 function generateCSRFToken() {
@@ -103,6 +105,17 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// General-purpose limiter for unauthenticated utility endpoints (CSRF token
+// issuance, client error logging). Caps abuse / memory-growth from clients that
+// hammer these without a session.
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // Max 60 requests per minute per IP
+  message: { message: 'Çok fazla istek gönderildi, lütfen kısa bir süre sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ============================================
 // JWT AUTHENTICATION
 // ============================================
@@ -152,8 +165,11 @@ function securityHeaders(req, res, next) {
 // HTTPS enforcement (production only)
 function enforceHTTPS(req, res, next) {
   if (process.env.NODE_ENV === 'production' && !req.secure) {
-    const redirectUrl = 'https://' + req.headers.host + req.url;
-    return res.redirect(301, redirectUrl);
+    // Build the redirect from the trusted configured base URL, NOT the
+    // attacker-controllable Host header (prevents host-header injection /
+    // open redirect on the 301).
+    const base = getBaseUrl().replace(/^http:\/\//, 'https://').replace(/\/+$/, '');
+    return res.redirect(301, base + req.url);
   }
   next();
 }
@@ -262,6 +278,7 @@ module.exports = {
   chartLimiter,
   authLimiter,
   forgotPasswordLimiter,
+  generalLimiter,
   
   // Authentication
   authenticateToken,

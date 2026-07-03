@@ -63,13 +63,11 @@ function setupEventDelegation() {
             functionRegistry.showFxPortfolioModal(fxName);
         },
         '.delete-portfolio-btn': (target) => {
-            const row = target.closest('.table-row');
-            if (!row) return;
-            const onclickAttr = target.getAttribute('onclick');
-            const match = onclickAttr ? onclickAttr.match(/deletePortfolioItem\((\d+)\)/) : null;
-            const itemId = match ? match[1] : null;
-            if (itemId && confirm('Bu öğeyi silmek istediğinize emin misiniz?')) {
-                functionRegistry.deletePortfolioItem(itemId);
+            const itemId = target.getAttribute('data-id');
+            const symbol = target.getAttribute('data-symbol') || '';
+            const itemType = target.getAttribute('data-itemtype') || 'portfolio item';
+            if (itemId) {
+                window.showDeleteConfirmationModal(itemId, symbol, itemType);
             }
         },
         '.chart-btn, .chart-icon': (target) => {
@@ -87,7 +85,10 @@ function setupEventDelegation() {
 
     document.addEventListener('click', (e) => {
         for (const [selector, handler] of Object.entries(eventHandlers)) {
-            if (e.target.matches(selector)) { handler(e.target); break; }
+            // closest() so a click on an inner icon (e.g. the ✕ <i> inside a
+            // delete button) still resolves to the delegated control.
+            const el = e.target.closest(selector);
+            if (el) { handler(el); break; }
         }
     }, { passive: true });
 

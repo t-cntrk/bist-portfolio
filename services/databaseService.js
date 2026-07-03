@@ -31,12 +31,6 @@ function getConnection() {
   return sharedConnection;
 }
 
-// Kept for API compatibility with all existing call sites. The shared connection
-// stays open for the lifetime of the process and is closed in shutdownDatabase().
-function releaseConnection(/* connection */) {
-  // no-op
-}
-
 // Database initialization
 function initializeDatabase() {
   const db = getConnection();
@@ -106,6 +100,20 @@ function initializeDatabase() {
       }
     });
 
+    // Dedicated columns for the password-reset flow so its token never collides
+    // with the email-verification token (both previously shared verification_token,
+    // which let a token minted for one flow be replayed against the other).
+    db.run(`ALTER TABLE users ADD COLUMN reset_token TEXT`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding reset_token column:', err);
+      }
+    });
+    db.run(`ALTER TABLE users ADD COLUMN reset_token_expires INTEGER`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding reset_token_expires column:', err);
+      }
+    });
+
     // Add UNIQUE constraint to email column
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`, (err) => {
       if (err) {
@@ -146,7 +154,6 @@ function shutdownDatabase() {
 
 module.exports = {
   getConnection,
-  releaseConnection,
   initializeDatabase,
   shutdownDatabase,
   dbPath

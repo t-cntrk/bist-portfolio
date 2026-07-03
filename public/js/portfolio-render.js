@@ -39,11 +39,17 @@ function createModernPortfolioRowHTML(item, currentPrice) {
 
     const sign = profitLoss > 0 ? '+' : '';
 
+    // Escape user-controlled symbol/name before interpolating into HTML.
+    // Delete action is wired via data-* attributes + event delegation (app.js)
+    // instead of an inline onclick, so the symbol never lands in a JS string.
+    const escSymbol = escapeHtml(cleanSymbol);
+    const escName   = escapeHtml(stockName);
+
     return `<tr>
         <td data-label="HISSE">
             <div class="stock-info">
-                <span class="symbol">${cleanSymbol}</span>
-                <span class="name">${stockName}</span>
+                <span class="symbol">${escSymbol}</span>
+                <span class="name">${escName}</span>
             </div>
         </td>
         <td data-label="MIKTAR">${item.quantity.toLocaleString('tr-TR')}</td>
@@ -53,7 +59,7 @@ function createModernPortfolioRowHTML(item, currentPrice) {
         <td data-label="K/Z (₺)" class="${profitLossClass}">${sign}${formatCurrency(profitLoss)}</td>
         <td data-label="K/Z (%)" class="${profitLossClass}">${sign}${profitLossPct.toFixed(2)}%</td>
         <td data-label="İŞLEM">
-            <button class="btn-action delete-portfolio-btn" onclick="showDeleteConfirmationModal(${item.id}, '${cleanSymbol}', 'hisse senedini')" title="Sil">
+            <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="hisse senedini" title="Sil">
                 <i>✕</i>
             </button>
         </td>

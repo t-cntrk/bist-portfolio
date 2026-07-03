@@ -5,6 +5,21 @@ const { stockCache, refreshStockCache, refreshFXCache } = require('../services/s
 // STOCK & FX HANDLERS
 // ============================================================
 
+/**
+ * Adds explicit data-quality flags to each item so the frontend can visibly
+ * distinguish live data from mock (demo) or stale (delayed cache) data.
+ * Purely additive: keeps existing fields (including `source`) untouched, so
+ * existing API consumers are unaffected.
+ *   dataQuality: 'live' | 'mock' | 'stale'
+ */
+function annotateDataQuality(items) {
+    if (!Array.isArray(items)) return items;
+    return items.map(item => {
+        const dataQuality = item.dataQuality || (item.source === 'mock' ? 'mock' : 'live');
+        return { ...item, dataQuality, isMock: dataQuality === 'mock', isStale: dataQuality === 'stale' };
+    });
+}
+
 exports.getStocks = async (req, res) => {
     const symbols = [
         'DOAS.IS', 'ALTNY.IS', 'ALARK.IS', 'ASELS.IS', 'ASTOR.IS',
@@ -18,13 +33,13 @@ exports.getStocks = async (req, res) => {
         if (cached) {
             // Keep the cache fresh in the background.
             refreshStockCache(symbols, cacheKey).catch(() => {});
-            return res.json(cached);
+            return res.json(annotateDataQuality(cached));
         }
 
         // First request after a cache miss: kick off a background refresh and return mock data fast.
         // Subsequent requests will return live results once the refresh succeeds.
         refreshStockCache(symbols, cacheKey).catch(() => {});
-        return res.json(buildMockStocks(symbols));
+        return res.json(annotateDataQuality(buildMockStocks(symbols)));
     } catch (err) {
         console.error('Stock controller error:', err);
         return res.status(500).json({
@@ -43,12 +58,12 @@ exports.getFX = async (req, res) => {
         if (cached) {
             // Refresh cache in background
             refreshFXCache(fxSymbols, cacheKey).catch(() => {});
-            return res.json(cached);
+            return res.json(annotateDataQuality(cached));
         }
 
         // No cache yet: return mock data fast while we try to refresh in the background
         refreshFXCache(fxSymbols, cacheKey).catch(() => {});
-        return res.json(buildMockFX(fxSymbols));
+        return res.json(annotateDataQuality(buildMockFX(fxSymbols)));
     } catch (err) {
         console.error('FX controller error:', err);
         return res.status(500).json({

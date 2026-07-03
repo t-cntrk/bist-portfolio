@@ -27,8 +27,13 @@ const STOCK_CACHE_KEY = 'bist_stocks_final';
 const CACHE_DIR = path.join(__dirname, '..', 'cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'stockCache.json');
 
-// Minimum time between background refresh attempts — matches cache TTL
+// Minimum time between SUCCESSFUL background refreshes — matches cache TTL
 const REFRESH_COOLDOWN_MS = 29 * 60 * 1000; // 29 min
+
+// After a FAILED refresh attempt, wait only this long before allowing another
+// attempt. This keeps a transient Yahoo error from locking fresh data behind the
+// full cooldown, while still throttling back-to-back retries (ANALYSIS 2.2).
+const REFRESH_RETRY_COOLDOWN_MS = 60 * 1000; // 1 min
 
 // How long to wait after a Yahoo rate limit before retrying (runs in background)
 const RATE_LIMIT_RETRY_WAIT_MS = 5 * 60 * 1000; // 5 min
@@ -37,9 +42,14 @@ const RATE_LIMIT_RETRY_WAIT_MS = 5 * 60 * 1000; // 5 min
 let pendingStocksFetch = null;
 let pendingFXFetch = null;
 
-// Background refresh tracking (to avoid spamming Yahoo when it rate-limits)
-let lastStockRefresh = 0;
-let lastFXRefresh = 0;
+// Background refresh tracking (to avoid spamming Yahoo when it rate-limits).
+// `last*Refresh` is advanced ONLY after a successful live fetch and gates the
+// full cooldown. `last*Attempt` records every attempt (success or failure) and
+// gates a short retry cooldown so a failed attempt retries soon (ANALYSIS 2.2).
+let lastStockRefresh = 0; // last SUCCESSFUL stock refresh
+let lastFXRefresh = 0;    // last SUCCESSFUL FX refresh
+let lastStockAttempt = 0; // last stock refresh attempt (success or failure)
+let lastFXAttempt = 0;    // last FX refresh attempt (success or failure)
 
 // ============================================================
 // DISK CACHE HELPERS
@@ -90,11 +100,19 @@ const saveCachedStocksToDisk = (items) => {
 // If the saved data is still fresh (< 30 min old), also set lastStockRefresh so the
 // cooldown guard prevents an immediate Yahoo fetch when the login screen fires /api/stocks.
 
+// Flag items served from an expired disk cache so the UI can show a "delayed data"
+// badge until the first live refresh replaces them. Adds a field only — never
+// removes or overwrites the original `source` (e.g. 'yahoo-v8').
+const tagStale = (items) => Array.isArray(items)
+    ? items.map(it => ({ ...it, dataQuality: 'stale' }))
+    : items;
+
 const diskCacheResult = loadCachedStocksFromDisk();
 if (diskCacheResult) {
-    stockCache.set(STOCK_CACHE_KEY, diskCacheResult.data);
     const cacheAgeMs = Date.now() - (diskCacheResult.savedAt || 0);
-    if (cacheAgeMs < CACHE_TTL_SECONDS * 1000) {
+    const isFresh = cacheAgeMs < CACHE_TTL_SECONDS * 1000;
+    stockCache.set(STOCK_CACHE_KEY, isFresh ? diskCacheResult.data : tagStale(diskCacheResult.data));
+    if (isFresh) {
         lastStockRefresh = diskCacheResult.savedAt || Date.now();
         console.log(`📦 Loaded fresh disk cache (${Math.round(cacheAgeMs / 60000)} min old) — Yahoo fetch deferred until cache expires.`);
     } else {
@@ -108,14 +126,19 @@ if (diskCacheResult) {
 
 function refreshStockCache(symbols, cacheKey) {
     const now = Date.now();
+    // Recently succeeded → serve the cache, don't refetch.
     if (now - lastStockRefresh < REFRESH_COOLDOWN_MS) {
         return pendingStocksFetch || Promise.resolve();
     }
-    lastStockRefresh = now;
-
+    // A fetch is already running → share it instead of starting a duplicate.
     if (pendingStocksFetch) {
         return pendingStocksFetch;
     }
+    // Recently attempted but not yet succeeded → back off briefly before retrying.
+    if (now - lastStockAttempt < REFRESH_RETRY_COOLDOWN_MS) {
+        return Promise.resolve();
+    }
+    lastStockAttempt = now;
 
     pendingStocksFetch = (async () => {
         try {
@@ -174,8 +197,9 @@ function refreshStockCache(symbols, cacheKey) {
                             const diskFallback = loadCachedStocksFromDisk();
                             if (diskFallback && diskFallback.data && diskFallback.data.length > 0) {
                                 console.warn(`  📦 Disk cache available — using ${diskFallback.data.length} cached symbols.`);
-                                stockCache.set(cacheKey, diskFallback.data);
-                                return diskFallback.data;
+                                const staleData = tagStale(diskFallback.data);
+                                stockCache.set(cacheKey, staleData);
+                                return staleData;
                             }
 
                             // Priority 2: wait 5 min and retry with v8 first, then npm
@@ -239,6 +263,8 @@ function refreshStockCache(symbols, cacheKey) {
             if (liveCount > 0) {
                 stockCache.set(cacheKey, results);
                 saveCachedStocksToDisk(results);
+                // Only a successful live fetch engages the full cooldown.
+                lastStockRefresh = Date.now();
                 const bySource = results.reduce((acc, r) => { acc[r.source] = (acc[r.source] || 0) + 1; return acc; }, {});
                 console.log(`✅ Stock cache updated: ${liveCount}/${results.length} live.`, bySource);
             }
@@ -257,14 +283,19 @@ function refreshStockCache(symbols, cacheKey) {
 
 function refreshFXCache(symbols, cacheKey) {
     const now = Date.now();
+    // Recently succeeded → serve the cache, don't refetch.
     if (now - lastFXRefresh < REFRESH_COOLDOWN_MS) {
         return pendingFXFetch || Promise.resolve();
     }
-    lastFXRefresh = now;
-
+    // A fetch is already running → share it instead of starting a duplicate.
     if (pendingFXFetch) {
         return pendingFXFetch;
     }
+    // Recently attempted but not yet succeeded → back off briefly before retrying.
+    if (now - lastFXAttempt < REFRESH_RETRY_COOLDOWN_MS) {
+        return Promise.resolve();
+    }
+    lastFXAttempt = now;
 
     pendingFXFetch = (async () => {
         try {
@@ -303,6 +334,8 @@ function refreshFXCache(symbols, cacheKey) {
             const liveCount = results.filter(r => r.source !== 'mock').length;
             if (liveCount > 0) {
                 stockCache.set(cacheKey, results);
+                // Only a successful live fetch engages the full cooldown.
+                lastFXRefresh = Date.now();
                 console.log(`✅ Cached ${liveCount}/${results.length} live FX rates.`);
             }
 

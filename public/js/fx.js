@@ -2,6 +2,7 @@
 // Import common functions from utils.js
 import { getApiUrl, createApiRequest } from './api.js';
 import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './notifications.js';
+import { computeDataQuality, renderDataQualityBadge } from './dom-helpers.js';
 
 // --- GLOBALS & CONSTANTS ---
 const FX_GRAM_CONVERT = 31.1035;
@@ -99,11 +100,8 @@ function validateFxData(fxName, quantity, price) {
 // Clear cache function for manual refresh (uses /api/stocks/clear-cache)
 export async function clearFxCache() {
     try {
-        const response = await fetch(getApiUrl('/api/stocks/clear-cache'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // createApiRequest attaches the x-csrf-token header the endpoint now requires.
+        const response = await createApiRequest('/api/stocks/clear-cache', { method: 'POST' });
         if (response.ok) {
             return true;
         }
@@ -131,6 +129,8 @@ export async function fetchCurrencyData(retryCount = 0, forceRefresh = false) {
         }
         
         const raw = await response.json();
+        // Flag mock/stale data so users don't mistake placeholder or cached rates for live ones.
+        renderDataQualityBadge(document.querySelector('.currency-section .section-title'), computeDataQuality(Array.isArray(raw) ? raw : []));
         // Backend returns array; normalize to object keyed by symbol
         const fxData = Array.isArray(raw) ? Object.fromEntries((raw || []).map(d => [d.symbol, d])) : (raw || {});
         

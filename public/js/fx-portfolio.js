@@ -8,7 +8,7 @@
  *   fx-portfolio.js is NOT imported by portfolio-render.js → no new cycle.
  */
 import { createApiRequest, handleApiResponse } from './api.js';
-import { FX_SYMBOL_TO_YAHOO } from './dom-helpers.js';
+import { FX_SYMBOL_TO_YAHOO, escapeHtml } from './dom-helpers.js';
 import { formatTRY as formatCurrency } from './formatters.js';
 
 // ─── FX market data ───────────────────────────────────────────────────────────
@@ -69,11 +69,15 @@ export function createModernFxPortfolioRowHTML(item, fxData) {
     const sign = profitLoss > 0 ? '+' : '';
     const lang = window.getCurrentLang ? window.getCurrentLang() : 'tr';
 
+    // Escape user-controlled symbol/name; delete uses data-* + delegation (app.js).
+    const escSymbol = escapeHtml(cleanSymbol);
+    const escName   = escapeHtml(getCurrencyName(cleanSymbol));
+
     return `<tr>
         <td data-label="VARLIK">
             <div class="stock-info">
-                <span class="symbol" style="color:#f59e0b;">${cleanSymbol}</span>
-                <span class="name" style="color:#f59e0b;">${getCurrencyName(cleanSymbol)}</span>
+                <span class="symbol" style="color:#f59e0b;">${escSymbol}</span>
+                <span class="name" style="color:#f59e0b;">${escName}</span>
             </div>
         </td>
         <td data-label="MIKTAR">${item.quantity.toLocaleString(lang === 'en' ? 'en-US' : 'tr-TR')}</td>
@@ -83,7 +87,7 @@ export function createModernFxPortfolioRowHTML(item, fxData) {
         <td data-label="KAR/ZARAR (₺)" class="${profitLossClass}">${sign}${formatCurrency(profitLoss)}</td>
         <td data-label="KAR/ZARAR (%)" class="${profitLossClass}">${sign}${profitLossPct.toFixed(2)}%</td>
         <td data-label="İŞLEM">
-            <button class="btn-action delete-portfolio-btn" onclick="showDeleteConfirmationModal(${item.id}, '${cleanSymbol}', 'döviz öğesini')" title="Sil">
+            <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="döviz öğesini" title="Sil">
                 <i>✕</i>
             </button>
         </td>

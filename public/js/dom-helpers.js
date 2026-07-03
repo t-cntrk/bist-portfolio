@@ -155,3 +155,50 @@ export function escapeHtml(unsafe) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+// ── Data-quality badge ──────────────────────────────────────────────────────
+// Shared by the stock and currency tables so both flag mock/stale data the same
+// way. Returns the worst quality present: 'mock' > 'stale' > 'live'.
+
+export function computeDataQuality(items) {
+    if (!Array.isArray(items) || items.length === 0) return 'live';
+    if (items.some(it => it && (it.isMock || it.dataQuality === 'mock'))) return 'mock';
+    if (items.some(it => it && (it.isStale || it.dataQuality === 'stale'))) return 'stale';
+    return 'live';
+}
+
+// Idempotently renders (or removes) a small pill badge inside `container`.
+// 'live' → no badge; 'mock' → "Demo veri"; 'stale' → "Gecikmeli".
+export function renderDataQualityBadge(container, quality) {
+    if (!container) return;
+    let badge = container.querySelector('[data-dq-badge]');
+
+    if (quality === 'live' || !quality) {
+        if (badge) badge.remove();
+        return;
+    }
+
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.setAttribute('data-dq-badge', '');
+        badge.className = 'data-quality-badge';
+        container.appendChild(badge);
+    }
+
+    const isEn = window.getCurrentLang && window.getCurrentLang() === 'en';
+    if (quality === 'mock') {
+        badge.classList.remove('is-stale');
+        badge.classList.add('is-mock');
+        badge.textContent = isEn ? '● Demo data' : '● Demo veri';
+        badge.title = isEn
+            ? 'Live source unavailable — showing placeholder prices'
+            : 'Canlı veri kaynağına ulaşılamadı — örnek fiyatlar gösteriliyor';
+    } else { // 'stale'
+        badge.classList.remove('is-mock');
+        badge.classList.add('is-stale');
+        badge.textContent = isEn ? '● Delayed' : '● Gecikmeli';
+        badge.title = isEn
+            ? 'Showing cached data — refreshing in the background…'
+            : 'Önbellek verisi gösteriliyor — arka planda yenileniyor…';
+    }
+}
