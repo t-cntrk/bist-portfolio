@@ -2,7 +2,7 @@
 // Import common functions from utils.js
 import { getApiUrl, createApiRequest } from './api.js';
 import { showErrorMessage, showSuccessMessage, showDataUpdateAnimation } from './notifications.js';
-import { computeDataQuality, renderDataQualityBadge } from './dom-helpers.js';
+import { computeDataQuality, renderDataQualityBadge, createModal, closeModal } from './dom-helpers.js';
 
 // --- GLOBALS & CONSTANTS ---
 const FX_GRAM_CONVERT = 31.1035;
@@ -322,187 +322,67 @@ let fxAutoRefreshInterval = null;
 // FX Portfolio modal
 export function showFxPortfolioModal(fxName) {
     try {
-        // Remove old modal if exists
-        const old = document.getElementById('fxPortfolioModal');
-        if (old) old.remove();
-        
-        // Create new modal
-        const modal = document.createElement('div');
-        modal.id = 'fxPortfolioModal';
-        const t = window.t || ((k, v) => k);
-        const titleText = t('fx.addTitle', { name: fxName });
-        const lblType = t('fx.type');
-        const lblQty = t('fx.qty');
-        const lblPrice = t('fx.price');
-        const phQty = t('fx.qtyPh');
-        const phPrice = t('fx.pricePh');
-        const submitText = t('fx.submit');
+        // Display name per instrument so the title matches the stock modal's
+        // "SYMBOL - Name" format.
+        const FX_NAMES = {
+            'USD/TRY': 'Amerikan Doları',
+            'EUR/TRY': 'Euro',
+            'XAU/USD': 'Altın (Ons)',
+            'XAU/TRY': 'Gram Altın'
+        };
+        const name = FX_NAMES[fxName] || fxName;
+        const t = (key, def) => (window.t ? window.t(key) : def);
 
-        modal.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(0, 0, 0, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            ">
-                <div style="
-                    background: #23243a;
-                    padding: 30px;
-                    border-radius: 15px;
-                    min-width: 320px;
-                    max-width: 95vw;
-                    position: relative;
-                    border: 1px solid #3b82f6;
-                ">
-                    <button id="closeFxPortfolioModalBtn" style="
-                        position: absolute;
-                        top: 15px;
-                        right: 15px;
-                        background: transparent;
-                        border: none;
-                        color: white;
-                        font-size: 20px;
-                        cursor: pointer;
-                        width: 30px;
-                        height: 30px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    ">×</button>
-                    
-                    <h3 style="
-                        margin: 0 0 20px 0;
-                        color: white;
-                        text-align: center;
-                        font-size: 1.5em;
-                    ">${titleText}</h3>
-                    
-                    <form id="fxPortfolioForm">
-                        <div style="margin-bottom: 15px;">
-                            <label style="
-                                display: block;
-                                color: #b0b3c6;
-                                margin-bottom: 5px;
-                                font-size: 14px;
-                            ">${lblType}</label>
-                            <input type="text" id="fxSymbol" value="${fxName}" readonly style="
-                                width: 100%;
-                                padding: 10px;
-                                border: 1px solid #444;
-                                border-radius: 8px;
-                                background: rgba(255,255,255,0.1);
-                                color: white;
-                                font-size: 16px;
-                                box-sizing: border-box;
-                            ">
-                        </div>
-                        
-                        <div style="margin-bottom: 15px;">
-                            <label style="
-                                display: block;
-                                color: #b0b3c6;
-                                margin-bottom: 5px;
-                                font-size: 14px;
-                            ">${lblQty}</label>
-                            <input type="number" id="fxQuantity" step="0.01" min="0.01" required style="
-                                width: 100%;
-                                padding: 10px;
-                                border: 1px solid #444;
-                                border-radius: 8px;
-                                background: rgba(255,255,255,0.1);
-                                color: white;
-                                font-size: 16px;
-                                box-sizing: border-box;
-                            " placeholder="${phQty}">
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="
-                                display: block;
-                                color: #b0b3c6;
-                                margin-bottom: 5px;
-                                font-size: 14px;
-                            ">${lblPrice}</label>
-                            <input type="number" id="fxPrice" step="0.0001" min="0.0001" required style="
-                                width: 100%;
-                                padding: 10px;
-                                border: 1px solid #444;
-                                border-radius: 8px;
-                                background: rgba(255,255,255,0.1);
-                                color: white;
-                                font-size: 16px;
-                                box-sizing: border-box;
-                            " placeholder="${phPrice}">
-                        </div>
-                        
-                        <button type="submit" style="
-                            width: 100%;
-                            padding: 12px;
-                            background: linear-gradient(135deg, #3b82f6, #22c55e);
-                            border: none;
-                            border-radius: 8px;
-                            color: white;
-                            font-size: 16px;
-                            font-weight: 600;
-                            cursor: pointer;
-                        ">${submitText}</button>
-                    </form>
+        // Same card markup as the stock modal (showPortfolioModal): compact dark
+        // glass card, single close button, only Miktar + Alış Fiyatı, one primary
+        // "Ekle" button. The "Döviz Türü" field is intentionally dropped — the
+        // symbol is already shown in the title.
+        const modalContent = `
+            <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.13);box-shadow:0 25px 45px rgba(0,0,0,0.25);padding:38px 32px 24px 32px;min-width:320px;max-width:95vw;position:relative;display:flex;flex-direction:column;align-items:center;">
+                <div style='position:absolute;top:12px;right:12px;display:flex;gap:4px;z-index:1100;'>
+                    <button class="close-btn" style="background:transparent;border:none;box-shadow:none;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                        <span style="font-size:1.1em;color:#e57373;">&#10005;</span>
+                    </button>
+                </div>
+                <h3 style="margin-top:0;margin-bottom:22px;text-align:center;font-size:1.35em;font-weight:700;color:#fff;">
+                    ${fxName} - ${name}
+                </h3>
+                <form id="fxPortfolioForm" style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:18px;">
+                    <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;">${t('modal.addQty', 'Miktar')}
+                        <input type="text" id="fxQuantity" inputmode="decimal" style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;">
+                    </label>
+                    <label style="display:block;color:rgba(255,255,255,0.8);margin-bottom:8px;font-size:14px;font-weight:500;">${t('modal.addPrice', 'Alış Fiyatı (₺)')}
+                        <input type="text" id="fxPrice" inputmode="decimal" style="width:100%;margin-top:10px;padding:12px 18px;box-sizing:border-box;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:16px;">
+                    </label>
+                </form>
+                <div style="text-align:center;margin-top:24px;width:100%;">
+                    <button type="submit" form="fxPortfolioForm" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;border-radius:10px;color:white;font-size:16px;font-weight:600;cursor:pointer;">${t('modal.addSubmit', 'Ekle')}</button>
                 </div>
             </div>
         `;
-        
-        document.body.appendChild(modal);
-        
-        // Close button event
-        const closeBtn = document.getElementById('closeFxPortfolioModalBtn');
-        if (closeBtn) {
-            closeBtn.onclick = () => {
-                modal.remove();
-            };
-        }
-        
-        // Form submission
-        const form = document.getElementById('fxPortfolioForm');
-        if (form) {
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                
-                const symbol = document.getElementById('fxSymbol').value;
-                const quantity = document.getElementById('fxQuantity').value;
-                const price = document.getElementById('fxPrice').value;
-                
-                // Validation
-                const errors = validateFxData(symbol, quantity, price);
-                if (errors.length > 0) {
-                    showErrorMessage(errors.join(', '));
-                    return;
-                }
-                
-                // Add to portfolio
-                const success = await addFxToPortfolio(symbol, quantity, price);
-                if (success) {
-                    modal.remove();
-                    // Refresh portfolio table
-                    if (window.renderFxPortfolioTable) {
-                        window.renderFxPortfolioTable();
-                    }
-                }
-            };
-        }
-        
-        // Close on outside click
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                modal.remove();
+
+        const modal = createModal('fxPortfolioModal', modalContent);
+
+        const form = modal.querySelector('#fxPortfolioForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const quantity = modal.querySelector('#fxQuantity').value.trim();
+            const price = modal.querySelector('#fxPrice').value.trim();
+
+            const quantityNum = parseFloat(quantity.replace(/[^\d,.-]/g, '').replace(/,/g, '.'));
+            const priceNum = parseFloat(price.replace(/[^\d,.-]/g, '').replace(/,/g, '.'));
+
+            const errors = validateFxData(fxName, quantityNum, priceNum);
+            if (errors.length > 0) { showErrorMessage(errors.join(', ')); return; }
+
+            // type 'fx' is sent inside addFxToPortfolio; weighted-average merge is
+            // handled by the backend.
+            const success = await addFxToPortfolio(fxName, quantityNum, priceNum);
+            if (success) {
+                closeModal('fxPortfolioModal');
+                if (window.renderFxPortfolioTable) window.renderFxPortfolioTable();
             }
         };
-        
     } catch (error) {
         console.error('FX Portfolio modal error:', error);
         showErrorMessage('Modal açılırken hata oluştu');
