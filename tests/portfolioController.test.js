@@ -33,12 +33,24 @@ const mockDb = {
     },
     run(sql, params, cb) {
         if (/INSERT INTO transactions/i.test(sql)) {
-            const [user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount] = params;
+            // Buy INSERT has no realized_pl column; sell INSERT appends it as param 8.
+            const hasRealized = /realized_pl/i.test(sql);
+            const [user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency] = params;
+            const realized_pl = hasRealized ? params[8] : null;
             const id = ++mockStore.txSeq;
-            mockStore.txRows.push({ id, user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, created_at: '2026-07-03 06:00:00' });
+            mockStore.txRows.push({ id, user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, realized_pl, created_at: '2026-07-03 06:00:00' });
             return cb.call({ lastID: id, changes: 1 }, null);
         }
         if (/^\s*UPDATE/i.test(sql)) {
+            if (/quantity = quantity -/i.test(sql)) {
+                // Partial sell decrement: WHERE id=? AND user_id=? AND quantity >= ?
+                const [sellQty, id, userId, minQty] = params;
+                const row = mockStore.rows.find(r => r.id === id && r.user_id === userId && r.quantity >= minQty);
+                if (!row) return cb.call({ changes: 0 }, null);
+                row.quantity = row.quantity - sellQty;
+                return cb.call({ changes: 1 }, null);
+            }
+            // addAsset merge update: SET quantity=?, purchase_price=? WHERE id=? AND user_id=?
             const [quantity, purchase_price, id, userId] = params;
             const row = mockStore.rows.find(r => r.id === id && r.user_id === userId);
             if (!row) return cb.call({ changes: 0 }, null);
@@ -59,6 +71,14 @@ const mockDb = {
             return cb.call({ lastID: id, changes: 1 }, null);
         }
         if (/^\s*DELETE/i.test(sql)) {
+            if (/quantity >=/i.test(sql)) {
+                // Full sell delete: WHERE id=? AND user_id=? AND quantity >= ?
+                const [id, userId, minQty] = params;
+                const idx = mockStore.rows.findIndex(r => r.id === id && r.user_id === userId && r.quantity >= minQty);
+                if (idx === -1) return cb.call({ changes: 0 }, null);
+                mockStore.rows.splice(idx, 1);
+                return cb.call({ changes: 1 }, null);
+            }
             const [assetId, userId] = params;
             const idx = mockStore.rows.findIndex(r => String(r.id) === String(assetId) && r.user_id === userId);
             if (idx === -1) return cb.call({ changes: 0 }, null);
@@ -109,6 +129,10 @@ function deleteAsset(userId, id) {
 function getTransactions(userId) {
     const c = creds(userId);
     return request(app).get('/api/portfolio/transactions').set('Cookie', c.cookie);
+}
+function sellAsset(userId, body) {
+    const c = creds(userId);
+    return request(app).post('/api/portfolio/sell').set('Cookie', c.cookie).set('x-csrf-token', c.csrf).send(body);
 }
 
 const VALID = { symbol: 'THYAO.IS', quantity: 10, purchase: 100, type: 'stock' };
@@ -299,6 +323,136 @@ describe('portfolio — transaction history ledger', () => {
         const tx2 = await getTransactions(2);
         expect(tx2.body).toHaveLength(1);
         expect(tx2.body[0].symbol).toBe('ASELS.IS');
+    });
+});
+
+describe('portfolio — sell transactions', () => {
+    // Sets up the scenario from the spec: buy 50@50 then 30@30 → 80 @ avg 42.50.
+    async function buildPosition(userId = 1) {
+        await addAsset(userId, { symbol: 'THYAO.IS', quantity: 50, purchase: 50, type: 'stock' });
+        await addAsset(userId, { symbol: 'THYAO.IS', quantity: 30, purchase: 30, type: 'stock' });
+    }
+
+    test('partial sell: quantity drops, average cost unchanged, realized P/L correct', async () => {
+        await buildPosition(1);
+
+        const sell = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 20, price: 60, type: 'stock' });
+        expect(sell.status).toBe(200);
+        expect(sell.body.closed).toBe(false);
+        expect(sell.body.remaining).toBeCloseTo(60, 6);          // 80 - 20
+        expect(sell.body.purchase_price).toBeCloseTo(42.5, 6);   // avg cost preserved
+        // realized P/L = 20 * (60 - 42.50) = 350
+        expect(sell.body.realized_pl).toBeCloseTo(350, 6);
+
+        // Position reflects the sell; average cost is untouched.
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(1);
+        expect(list.body[0].quantity).toBeCloseTo(60, 6);
+        expect(list.body[0].purchase_price).toBeCloseTo(42.5, 6);
+    });
+
+    test('partial sell appends a SELL row to the append-only ledger with persisted P/L', async () => {
+        await buildPosition(1);
+        await sellAsset(1, { symbol: 'THYAO.IS', quantity: 20, price: 60, type: 'stock' });
+
+        const tx = await getTransactions(1);
+        // 2 buys + 1 sell, newest first
+        expect(tx.body).toHaveLength(3);
+        const sellRow = tx.body[0];
+        expect(sellRow.transaction_type).toBe('sell');
+        expect(sellRow.quantity).toBe(20);
+        expect(sellRow.unit_price).toBe(60);
+        expect(sellRow.total_amount).toBe(1200);      // 20 * 60 proceeds
+        expect(sellRow.realized_pl).toBeCloseTo(350, 6);
+        expect(sellRow.currency).toBe('TRY');         // exposed so the UI can label amounts
+
+        // The original BUY rows are untouched (append-only): still 2 buys, P/L null.
+        const buys = tx.body.filter(t => t.transaction_type === 'buy');
+        expect(buys).toHaveLength(2);
+        buys.forEach(b => expect(b.realized_pl == null).toBe(true));
+    });
+
+    test('full sell: position removed, history intact, realized P/L recorded', async () => {
+        await buildPosition(1);
+        // sell everything: 80 @ 40 → realized P/L = 80 * (40 - 42.50) = -200 (a loss)
+        const sell = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 80, price: 40, type: 'stock' });
+        expect(sell.status).toBe(200);
+        expect(sell.body.closed).toBe(true);
+        expect(sell.body.remaining).toBe(0);
+        expect(sell.body.realized_pl).toBeCloseTo(-200, 6);
+
+        // Position is gone.
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(0);
+
+        // History survives: 2 buys + 1 sell.
+        const tx = await getTransactions(1);
+        expect(tx.body).toHaveLength(3);
+        expect(tx.body.filter(t => t.transaction_type === 'sell')).toHaveLength(1);
+        expect(tx.body.filter(t => t.transaction_type === 'buy')).toHaveLength(2);
+    });
+
+    test('sequential partial sells keep average cost fixed and P/L per-sale correct', async () => {
+        await buildPosition(1); // 80 @ 42.50
+
+        const s1 = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 30, price: 50, type: 'stock' });
+        expect(s1.body.remaining).toBeCloseTo(50, 6);
+        expect(s1.body.realized_pl).toBeCloseTo(30 * (50 - 42.5), 6); // 225
+
+        const s2 = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 50, price: 30, type: 'stock' });
+        expect(s2.body.closed).toBe(true);
+        expect(s2.body.realized_pl).toBeCloseTo(50 * (30 - 42.5), 6); // -625
+
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(0);
+    });
+
+    test('selling more than owned → 400 and nothing changes', async () => {
+        await buildPosition(1); // 80 owned
+        const sell = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 81, price: 60, type: 'stock' });
+        expect(sell.status).toBe(400);
+
+        // Position untouched, no SELL row appended.
+        const list = await getPortfolio(1);
+        expect(list.body[0].quantity).toBe(80);
+        const tx = await getTransactions(1);
+        expect(tx.body.some(t => t.transaction_type === 'sell')).toBe(false);
+    });
+
+    test('selling an asset not in the portfolio → 404', async () => {
+        const sell = await sellAsset(1, { symbol: 'ASELS.IS', quantity: 1, price: 10, type: 'stock' });
+        expect(sell.status).toBe(404);
+    });
+
+    test('sell with invalid quantity (0) → 400', async () => {
+        await buildPosition(1);
+        const sell = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 0, price: 60, type: 'stock' });
+        expect(sell.status).toBe(400);
+    });
+
+    test('sell with invalid price (0) → 400', async () => {
+        await buildPosition(1);
+        const sell = await sellAsset(1, { symbol: 'THYAO.IS', quantity: 10, price: 0, type: 'stock' });
+        expect(sell.status).toBe(400);
+    });
+
+    test('sell without CSRF token → 403', async () => {
+        await buildPosition(1);
+        const authToken = jwt.sign({ id: 1, username: 'u1' }, process.env.JWT_SECRET);
+        const res = await request(app).post('/api/portfolio/sell')
+            .set('Cookie', [`authToken=${authToken}`])
+            .send({ symbol: 'THYAO.IS', quantity: 10, price: 60, type: 'stock' });
+        expect(res.status).toBe(403);
+    });
+
+    test("a user cannot sell from another user's position", async () => {
+        await buildPosition(1); // user 1 owns THYAO
+        const sell = await sellAsset(2, { symbol: 'THYAO.IS', quantity: 10, price: 60, type: 'stock' });
+        expect(sell.status).toBe(404); // user 2 has no such position
+
+        // user 1's position is intact
+        const list = await getPortfolio(1);
+        expect(list.body[0].quantity).toBe(80);
     });
 });
 

@@ -397,6 +397,11 @@
             <div class="new-unified-portfolio transaction-history">
                 <div class="new-portfolio-header">
                     <div class="new-portfolio-title" data-i18n="tx.title">İşlem Geçmişi</div>
+                    <!-- Aggregate realized P/L (TRY sells); filled by transactions.js, hidden until a sell exists -->
+                    <div class="new-portfolio-update" id="txRealizedTotal" style="display:none;">
+                        <span data-i18n="tx.realizedTotal">Gerçekleşen K/Z</span>:
+                        <strong id="txRealizedTotalValue"></strong>
+                    </div>
                 </div>
                 <table class="new-portfolio-table">
                     <thead>
@@ -407,6 +412,7 @@
                             <th data-i18n="tx.qty">Miktar</th>
                             <th data-i18n="tx.unitPrice">Birim Fiyat</th>
                             <th data-i18n="tx.total">Toplam</th>
+                            <th data-i18n="tx.realized">K/Z</th>
                         </tr>
                     </thead>
                     <tbody id="transactionHistoryBody">

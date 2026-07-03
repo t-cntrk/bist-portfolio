@@ -36,15 +36,58 @@ export async function fetchTransactions() {
     }
 }
 
+// Currency symbol for a ledger row. Amounts are stored in the transaction's own
+// currency (TRY for everything except USD-quoted GC=F).
+function currencySign(currency) {
+    return currency === 'USD' ? '$' : '₺';
+}
+
+// Signed, colored realized-P/L cell content for a sell row; buys show a dash.
+function realizedCellHTML(tx) {
+    const pl = tx.realized_pl;
+    if (tx.transaction_type !== 'sell' || pl == null || isNaN(Number(pl))) {
+        return '<td style="color:rgba(255,255,255,0.35);">—</td>';
+    }
+    const value = Number(pl);
+    const cls = value > 0 ? 'profit' : (value < 0 ? 'loss' : 'neutral');
+    const sign = value > 0 ? '+' : '';
+    return `<td class="${cls}">${sign}${formatNumber(value, 2)} ${currencySign(tx.currency)}</td>`;
+}
+
+// Aggregate realized P/L across TRY-denominated sells, shown in the history
+// header. Non-TRY sells (currently only GC=F/USD) are excluded rather than
+// summed across currencies; hidden entirely until at least one sell exists.
+function updateRealizedTotal(rows) {
+    const container = document.getElementById('txRealizedTotal');
+    const valueEl = document.getElementById('txRealizedTotalValue');
+    if (!container || !valueEl) return;
+
+    const sells = rows.filter(tx =>
+        tx.transaction_type === 'sell' &&
+        tx.realized_pl != null && !isNaN(Number(tx.realized_pl)) &&
+        (!tx.currency || tx.currency === 'TRY')
+    );
+    if (sells.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    const total = sells.reduce((sum, tx) => sum + Number(tx.realized_pl), 0);
+    const sign = total > 0 ? '+' : '';
+    valueEl.textContent = `${sign}${formatNumber(total, 2)} ₺`;
+    valueEl.className = total > 0 ? 'profit' : (total < 0 ? 'loss' : 'neutral');
+    container.style.display = '';
+}
+
 export async function renderTransactions() {
     const tbody = document.getElementById('transactionHistoryBody');
     if (!tbody) return;
 
     const rows = await fetchTransactions();
+    updateRealizedTotal(rows);
 
     if (rows.length === 0) {
         const empty = window.t ? window.t('tx.empty') : 'Henüz işlem bulunmuyor';
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:rgba(255,255,255,0.5);">${escapeHtml(empty)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:rgba(255,255,255,0.5);">${escapeHtml(empty)}</td></tr>`;
         return;
     }
 
@@ -55,14 +98,16 @@ export async function renderTransactions() {
         const unit = formatNumber(Number(tx.unit_price) || 0, 2);
         const total = formatNumber(Number(tx.total_amount) || 0, 2);
         const typeClass = tx.transaction_type === 'sell' ? 'change-negative' : 'change-positive';
+        const money = currencySign(tx.currency);
         return `
             <tr>
                 <td>${formatTxDate(tx.created_at)}</td>
                 <td>${symbol}</td>
                 <td class="${typeClass}">${escapeHtml(typeLabel)}</td>
                 <td>${qty}</td>
-                <td>${unit} ₺</td>
-                <td>${total} ₺</td>
+                <td>${unit} ${money}</td>
+                <td>${total} ${money}</td>
+                ${realizedCellHTML(tx)}
             </tr>`;
     }).join('');
 }

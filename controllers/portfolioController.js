@@ -150,6 +150,108 @@ exports.addAsset = (req, res) => {
     );
 };
 
+// @desc    Sell part or all of an existing position
+// @route   POST /api/portfolio/sell
+exports.sellAsset = (req, res) => {
+    const { symbol, quantity, price } = req.body;
+    const type = req.body.type || 'stock';
+    const userId = req.user.id;
+    const db = getConnection();
+
+    // Float tolerance so "sell exactly all" isn't defeated by representation noise
+    // (e.g. an owned quantity stored as 79.99999999 after prior averaging).
+    const EPS = 1e-9;
+
+    // Optional explicit trade time (see addAsset); normal sells fall back to now.
+    const executedAt = (typeof req.body.executedAt === 'string' && req.body.executedAt.trim())
+        ? req.body.executedAt.trim()
+        : null;
+
+    db.get(
+        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
+        [userId, symbol, type],
+        (selErr, position) => {
+            if (selErr) {
+                console.error('Sell lookup error:', selErr);
+                return res.status(500).json({ message: 'Satış işlemi başarısız' });
+            }
+            // Business rule: cannot sell an asset that isn't held.
+            if (!position) {
+                return res.status(404).json({ message: 'Satılacak varlık portföyünüzde bulunamadı' });
+            }
+            // Business rule: cannot sell more than owned.
+            if (quantity > position.quantity + EPS) {
+                return res.status(400).json({ message: `Sahip olduğunuzdan fazlasını satamazsınız (mevcut miktar: ${position.quantity})` });
+            }
+
+            // Average cost is a fixed fact of the position — a sell NEVER recomputes
+            // it. Realized P/L crystallizes against that cost at this instant and is
+            // persisted immutably on the ledger row.
+            const avgCost = position.purchase_price;
+            const proceeds = quantity * price;
+            const realizedPl = quantity * (price - avgCost);
+            const remaining = position.quantity - quantity;
+            const fullSell = remaining <= EPS;
+
+            // Append the immutable SELL to the append-only ledger, then reply. Mirrors
+            // addAsset: the position (what the UI reads) is already updated, so a
+            // ledger failure is logged but doesn't fail the request.
+            const recordThenRespond = (positionResult) => {
+                db.run(
+                    `INSERT INTO transactions
+                        (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, realized_pl, created_at, executed_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE(?, CURRENT_TIMESTAMP))`,
+                    [userId, symbol, type, 'sell', quantity, price, proceeds, getTransactionCurrency(symbol), realizedPl, executedAt],
+                    (txErr) => {
+                        if (txErr) console.error('Sell ledger insert error:', txErr);
+                        return res.json(positionResult);
+                    }
+                );
+            };
+
+            if (fullSell) {
+                // Full exit: remove the position entirely. The guarded WHERE makes the
+                // delete atomic against concurrent/duplicate sells — it only fires if
+                // the row still holds the quantity we priced, otherwise changes === 0.
+                db.run(
+                    'DELETE FROM portfolios WHERE id = ? AND user_id = ? AND quantity >= ?',
+                    [position.id, userId, quantity - EPS],
+                    function (delErr) {
+                        if (delErr) {
+                            console.error('Sell (full) delete error:', delErr);
+                            return res.status(500).json({ message: 'Satış işlemi başarısız' });
+                        }
+                        if (this.changes === 0) {
+                            return res.status(409).json({ message: 'Pozisyon değişti, lütfen tekrar deneyin' });
+                        }
+                        return recordThenRespond({ id: position.id, sold: quantity, remaining: 0, closed: true, realized_pl: realizedPl, purchase_price: avgCost });
+                    }
+                );
+                return;
+            }
+
+            // Partial sell: decrement quantity, leaving purchase_price (the weighted
+            // average cost) untouched. The `quantity >= ?` guard prevents overselling
+            // under a concurrent/duplicate request; changes === 0 means the position
+            // no longer holds enough and we refuse rather than go negative.
+            db.run(
+                'UPDATE portfolios SET quantity = quantity - ? WHERE id = ? AND user_id = ? AND quantity >= ?',
+                [quantity, position.id, userId, quantity],
+                function (updErr) {
+                    if (updErr) {
+                        console.error('Sell (partial) update error:', updErr);
+                        return res.status(500).json({ message: 'Satış işlemi başarısız' });
+                    }
+                    if (this.changes === 0) {
+                        return res.status(409).json({ message: 'Pozisyon değişti, lütfen tekrar deneyin' });
+                    }
+                    return recordThenRespond({ id: position.id, sold: quantity, remaining, closed: false, realized_pl: realizedPl, purchase_price: avgCost });
+                }
+            );
+        }
+    );
+};
+
 // @desc    Get the user's transaction history (append-only ledger)
 // @route   GET /api/portfolio/transactions?symbol=OPTIONAL
 exports.getTransactions = (req, res) => {
@@ -158,7 +260,10 @@ exports.getTransactions = (req, res) => {
     const symbol = req.query.symbol;
 
     // Newest first. Optional symbol filter supports future per-asset views.
-    let sql = 'SELECT id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, created_at FROM transactions WHERE user_id = ?';
+    // realized_pl is included so history can show the P/L crystallized by sells
+    // (NULL for buys); currency lets the client label amounts honestly instead
+    // of assuming TRY (GC=F sells are USD-denominated).
+    let sql = 'SELECT id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, realized_pl, currency, created_at FROM transactions WHERE user_id = ?';
     const params = [userId];
     if (symbol) {
         sql += ' AND symbol = ?';

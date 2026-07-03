@@ -4458,6 +4458,51 @@ table td[data-label="MIKTAR"] {
     box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(239, 68, 68, 0.28) !important;
 }
 
+/* Action cell: keep the Sell + Delete buttons side by side and centered */
+.portfolio-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Sell button — emerald pill, distinct from the red delete and the blue-green add */
+.btn-action.sell-portfolio-btn {
+    width: auto;
+    height: 28px;
+    min-width: 44px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.10));
+    color: #6ee7b7;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 6px rgba(16, 185, 129, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+.btn-action.sell-portfolio-btn span {
+    color: inherit;
+    font-weight: 700;
+}
+.btn-action.sell-portfolio-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(16, 185, 129, 0.16));
+    border-color: rgba(16, 185, 129, 0.55);
+    color: #d1fae5;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(16, 185, 129, 0.28);
+}
+.btn-action.sell-portfolio-btn:active {
+    transform: translateY(0);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.28), rgba(16, 185, 129, 0.20));
+}
+
 /* Center numeric columns (2 through 7) with flex to ensure perfect centering */
 .new-portfolio-container .new-portfolio-table tbody td:nth-child(2),
 .new-portfolio-container .new-portfolio-table tbody td:nth-child(3),

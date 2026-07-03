@@ -21,7 +21,21 @@ const addAssetValidation = [
   body('type').optional().isIn(['stock', 'fx']).withMessage('Tür stock veya fx olmalıdır')
 ];
 
-function validateAddAsset(req, res, next) {
+// Sell reuses the same symbol/quantity/type guards; only the price field differs
+// (`price` = sale price, vs `purchase` for a buy).
+const sellAssetValidation = [
+  body('symbol')
+    .trim()
+    .notEmpty().withMessage('Sembol gereklidir')
+    .isLength({ max: 50 })
+    .matches(/^[A-Za-z0-9.=^/&#;_-]+$/).withMessage('Sembol geçersiz karakter içeriyor'),
+  body('quantity').isFloat({ min: 0.0001, max: 1e9 }).withMessage('Miktar 0 ile 1.000.000.000 arasında olmalıdır').toFloat(),
+  body('price').isFloat({ min: 0.01, max: 1e9 }).withMessage('Satış fiyatı 0 ile 1.000.000.000 arasında olmalıdır').toFloat(),
+  body('type').optional().isIn(['stock', 'fx']).withMessage('Tür stock veya fx olmalıdır')
+];
+
+// Generic express-validator result handler shared by the mutating routes.
+function handleValidation(req, res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
@@ -45,7 +59,13 @@ router.get('/portfolio/transactions', authenticateToken, portfolioController.get
  * @route   POST /api/portfolio
  * @desc    Add new stock or FX to portfolio
  */
-router.post('/portfolio', authenticateToken, validateCSRF, addAssetValidation, validateAddAsset, portfolioController.addAsset);
+router.post('/portfolio', authenticateToken, validateCSRF, addAssetValidation, handleValidation, portfolioController.addAsset);
+
+/**
+ * @route   POST /api/portfolio/sell
+ * @desc    Sell part or all of an existing position (records a SELL in the ledger)
+ */
+router.post('/portfolio/sell', authenticateToken, validateCSRF, sellAssetValidation, handleValidation, portfolioController.sellAsset);
 
 /**
  * @route   DELETE /api/portfolio/:id
