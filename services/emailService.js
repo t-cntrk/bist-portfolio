@@ -3,10 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const { getBaseUrl } = require('../utils/envConfig');
 
-// Debug: Log email configuration (without exposing secrets)
+// Debug: Log email configuration presence only — never print the actual
+// address or password, so credentials don't leak into dev/prod logs.
 console.log('📧 EmailService Configuration:');
-console.log('EMAIL_USER:', process.env.EMAIL_USER || 'NOT SET');
-console.log('EMAIL_FROM:', process.env.EMAIL_FROM || process.env.EMAIL_USER || 'NOT SET');
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? '***SET***' : 'NOT SET');
+console.log('EMAIL_FROM:', (process.env.EMAIL_FROM || process.env.EMAIL_USER) ? '***SET***' : 'NOT SET');
 console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***SET***' : 'NOT SET');
 
 // Email transporter setup (hardened with dev fallback)
