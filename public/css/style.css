@@ -4595,3 +4595,8 @@ table td[data-label="MIKTAR"] {
     text-align: center;
     margin-top: 20px;
 }
+
+/* Transaction history reuses the portfolio card/table styles; just space it out. */
+.transaction-history {
+    margin-top: 24px;
+}

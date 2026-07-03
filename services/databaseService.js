@@ -78,6 +78,30 @@ function initializeDatabase() {
       }
     });
 
+    // Append-only transaction ledger. `portfolios` holds the current position
+    // (summary); this table records every individual buy/sell so users get a
+    // permanent history. transaction_type defaults to 'buy' today but the column
+    // exists so sells, realized P/L, filtering, export and analytics can be added
+    // later without a schema change.
+    db.run(`CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      symbol TEXT NOT NULL,
+      asset_type TEXT NOT NULL,
+      transaction_type TEXT NOT NULL DEFAULT 'buy',
+      quantity REAL NOT NULL,
+      unit_price REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`, (err) => {
+      if (err) {
+        console.error('Error creating transactions table:', err);
+      } else {
+        console.log('Transactions table ready');
+      }
+    });
+
     // Migrations (ALTER/INDEX) must run inside the same serialize() block AFTER
     // the CREATE TABLE statements, otherwise they can execute before the tables
     // exist on a cold start.
@@ -129,6 +153,13 @@ function initializeDatabase() {
         console.error('Error adding unique constraint to portfolio:', err);
       } else {
         console.log('Portfolio unique constraint ensured');
+      }
+    });
+
+    // Speeds up per-user (and per-symbol) transaction-history reads.
+    db.run(`CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id, symbol, created_at)`, (err) => {
+      if (err && !err.message.includes('already exists')) {
+        console.error('Error creating transactions index:', err);
       }
     });
   });

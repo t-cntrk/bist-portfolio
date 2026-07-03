@@ -36,6 +36,12 @@ function validateAddAsset(req, res, next) {
 router.get('/portfolio', authenticateToken, portfolioController.getPortfolio);
 
 /**
+ * @route   GET /api/portfolio/transactions
+ * @desc    Get the user's transaction history (append-only ledger)
+ */
+router.get('/portfolio/transactions', authenticateToken, portfolioController.getTransactions);
+
+/**
  * @route   POST /api/portfolio
  * @desc    Add new stock or FX to portfolio
  */

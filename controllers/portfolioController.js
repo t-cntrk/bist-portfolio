@@ -26,6 +26,21 @@ exports.addAsset = (req, res) => {
     const userId = req.user.id;
     const db = getConnection();
 
+    // Append the immutable buy to the transaction ledger (this buy's own quantity
+    // and unit price — NOT the merged position), then reply with the position
+    // result. A ledger failure is logged but doesn't fail the buy, since the
+    // position summary (what the UI reads) is already updated.
+    const recordThenRespond = (positionResult) => {
+        db.run(
+            'INSERT INTO transactions (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [userId, symbol, type, 'buy', quantity, purchase, quantity * purchase],
+            (txErr) => {
+                if (txErr) console.error('Transaction ledger insert error:', txErr);
+                return res.json(positionResult);
+            }
+        );
+    };
+
     // Buying more of an asset already held is a valid action, not a duplicate.
     // If the user already holds this symbol+type, merge the buy into the existing
     // position: sum the quantity and recompute the weighted-average purchase price.
@@ -51,7 +66,7 @@ exports.addAsset = (req, res) => {
                             console.error('Portfolio update error:', updErr);
                             return res.status(500).json({ message: 'Portföy güncellenemedi' });
                         }
-                        return res.json({ id: existing.id, merged: true, quantity: totalQuantity, purchase_price: avgPrice });
+                        return recordThenRespond({ id: existing.id, merged: true, quantity: totalQuantity, purchase_price: avgPrice });
                     }
                 );
                 return;
@@ -70,11 +85,36 @@ exports.addAsset = (req, res) => {
                         console.error('Portfolio insert error:', insErr);
                         return res.status(500).json({ message: 'Portföy eklenemedi' });
                     }
-                    return res.json({ id: this.lastID });
+                    return recordThenRespond({ id: this.lastID });
                 }
             );
         }
     );
+};
+
+// @desc    Get the user's transaction history (append-only ledger)
+// @route   GET /api/portfolio/transactions?symbol=OPTIONAL
+exports.getTransactions = (req, res) => {
+    const db = getConnection();
+    const userId = req.user.id;
+    const symbol = req.query.symbol;
+
+    // Newest first. Optional symbol filter supports future per-asset views.
+    let sql = 'SELECT id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, created_at FROM transactions WHERE user_id = ?';
+    const params = [userId];
+    if (symbol) {
+        sql += ' AND symbol = ?';
+        params.push(symbol);
+    }
+    sql += ' ORDER BY created_at DESC, id DESC';
+
+    db.all(sql, params, (err, rows) => {
+        if (err) {
+            console.error('Transaction history error:', err);
+            return res.status(500).json({ message: 'İşlem geçmişi alınamadı' });
+        }
+        res.json(rows);
+    });
 };
 // @desc    Remove an asset from portfolio
 // @route   DELETE /api/portfolio/:id

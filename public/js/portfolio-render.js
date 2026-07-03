@@ -189,6 +189,9 @@ export async function renderUnifiedPortfolio() {
         setAllocationSegment('fx', fxAllocationItems);
         updateSummaryCards(totalInvestmentValue, totalCurrentValue, totalProfitValue);
 
+        // Keep the transaction-history ledger in sync with the portfolio render.
+        if (window.renderTransactions) window.renderTransactions();
+
     } catch (error) {
         console.error('Error rendering unified portfolio:', error);
         portfolioBody.innerHTML = '';

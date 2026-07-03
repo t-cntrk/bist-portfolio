@@ -10,6 +10,9 @@ import { showErrorMessage, showSuccessMessage } from './notifications.js';
 import { getApiUrl } from './api.js';
 import { closeModal } from './dom-helpers.js';
 import { sendErrorLog } from './helpers.js';
+// Side-effect import: registers window.renderTransactions, called by the
+// portfolio render flow to keep the transaction-history table in sync.
+import './transactions.js';
 import { AppState } from './state.js';
 import { getCurrentLang, applyI18n } from './i18n.js';
 import { initSorting } from './sorting.js';

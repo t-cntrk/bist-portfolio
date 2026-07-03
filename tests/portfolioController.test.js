@@ -6,9 +6,19 @@ process.env.JWT_SECRET = 'test-secret-at-least-16-chars-long';
 
 // ── In-memory DB double (behaves like the sqlite3 callback API used by the
 // controller: cb is invoked with `this` bound to { lastID, changes }). ─────────
-const mockStore = { rows: [], seq: 0 };
+const mockStore = { rows: [], seq: 0, txRows: [], txSeq: 0 };
 const mockDb = {
     all(sql, params, cb) {
+        if (/FROM transactions/i.test(sql)) {
+            // getTransactions: WHERE user_id = ? [AND symbol = ?] ORDER BY newest first
+            const userId = params[0];
+            const symbol = params.length > 1 ? params[1] : null;
+            const rows = mockStore.txRows
+                .filter(r => r.user_id === userId && (!symbol || r.symbol === symbol))
+                .slice()
+                .sort((a, b) => b.id - a.id);
+            return cb(null, rows);
+        }
         const userId = params[0];
         const rows = mockStore.rows
             .filter(r => r.user_id === userId)
@@ -22,6 +32,12 @@ const mockDb = {
         cb(null, row);
     },
     run(sql, params, cb) {
+        if (/INSERT INTO transactions/i.test(sql)) {
+            const [user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount] = params;
+            const id = ++mockStore.txSeq;
+            mockStore.txRows.push({ id, user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, created_at: '2026-07-03 06:00:00' });
+            return cb.call({ lastID: id, changes: 1 }, null);
+        }
         if (/^\s*UPDATE/i.test(sql)) {
             const [quantity, purchase_price, id, userId] = params;
             const row = mockStore.rows.find(r => r.id === id && r.user_id === userId);
@@ -90,12 +106,18 @@ function deleteAsset(userId, id) {
     const c = creds(userId);
     return request(app).delete('/api/portfolio/' + id).set('Cookie', c.cookie).set('x-csrf-token', c.csrf);
 }
+function getTransactions(userId) {
+    const c = creds(userId);
+    return request(app).get('/api/portfolio/transactions').set('Cookie', c.cookie);
+}
 
 const VALID = { symbol: 'THYAO.IS', quantity: 10, purchase: 100, type: 'stock' };
 
 beforeEach(() => {
     mockStore.rows = [];
     mockStore.seq = 0;
+    mockStore.txRows = [];
+    mockStore.txSeq = 0;
     csrfTokens.clear();
 });
 
@@ -225,6 +247,58 @@ describe('portfolio — repeated buys merge with weighted average', () => {
         const stock = list.body.find(r => r.type === 'stock');
         expect(fx.quantity).toBe(2);
         expect(stock.quantity).toBe(3);
+    });
+});
+
+describe('portfolio — transaction history ledger', () => {
+    test('GET /portfolio/transactions without auth → 401', async () => {
+        const res = await request(app).get('/api/portfolio/transactions');
+        expect(res.status).toBe(401);
+    });
+
+    test('a buy records one transaction with the correct details', async () => {
+        await addAsset(1, { symbol: 'USDTRY=X', quantity: 50, purchase: 50, type: 'fx' });
+
+        const tx = await getTransactions(1);
+        expect(tx.status).toBe(200);
+        expect(tx.body).toHaveLength(1);
+        const t = tx.body[0];
+        expect(t.symbol).toBe('USDTRY=X');
+        expect(t.asset_type).toBe('fx');
+        expect(t.transaction_type).toBe('buy');
+        expect(t.quantity).toBe(50);
+        expect(t.unit_price).toBe(50);
+        expect(t.total_amount).toBe(2500); // 50 * 50
+    });
+
+    test('repeated buys append a ledger row each while the position merges', async () => {
+        await addAsset(1, { symbol: 'USDTRY=X', quantity: 50, purchase: 50, type: 'fx' });
+        await addAsset(1, { symbol: 'USDTRY=X', quantity: 30, purchase: 30, type: 'fx' });
+
+        // Ledger has BOTH buys (with their own prices), newest first
+        const tx = await getTransactions(1);
+        expect(tx.body).toHaveLength(2);
+        expect(tx.body.map(t => t.unit_price)).toEqual([30, 50]);
+        expect(tx.body.map(t => t.total_amount)).toEqual([900, 2500]);
+
+        // Position is still a single merged row (weighted average)
+        const list = await getPortfolio(1);
+        expect(list.body).toHaveLength(1);
+        expect(list.body[0].quantity).toBe(80);
+        expect(list.body[0].purchase_price).toBeCloseTo(42.5, 6);
+    });
+
+    test("transactions are scoped per user", async () => {
+        await addAsset(1, { symbol: 'THYAO.IS', quantity: 10, purchase: 100, type: 'stock' });
+        await addAsset(2, { symbol: 'ASELS.IS', quantity: 5, purchase: 50, type: 'stock' });
+
+        const tx1 = await getTransactions(1);
+        expect(tx1.body).toHaveLength(1);
+        expect(tx1.body[0].symbol).toBe('THYAO.IS');
+
+        const tx2 = await getTransactions(2);
+        expect(tx2.body).toHaveLength(1);
+        expect(tx2.body[0].symbol).toBe('ASELS.IS');
     });
 });
 
