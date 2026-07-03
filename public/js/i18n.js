@@ -70,16 +70,6 @@ export const translations = {
         'modal.addQty': 'Miktar',
         'modal.addPrice': 'Alış Fiyatı (₺)',
         'modal.addSubmit': 'Ekle',
-        'fx.promptQty': '{name} miktarını girin:',
-        'fx.promptPrice': '{name} alış fiyatını girin:',
-        // FX add modal
-        'fx.addTitle': '{name} Portföye Ekle',
-        'fx.type': 'Döviz Türü',
-        'fx.qty': 'Miktar',
-        'fx.price': 'Alış Fiyatı',
-        'fx.qtyPh': 'Miktar giriniz',
-        'fx.pricePh': 'Alış fiyatı giriniz',
-        'fx.submit': 'Portföye Ekle',
         // Messages
         'msg.addSuccess': 'Portföye başarıyla eklendi',
         'msg.addError': 'Portföye ekleme hatası: ',
@@ -190,16 +180,6 @@ export const translations = {
         'modal.addQty': 'Quantity',
         'modal.addPrice': 'Buy Price (₺)',
         'modal.addSubmit': 'Add',
-        'fx.promptQty': 'Enter quantity for {name}:',
-        'fx.promptPrice': 'Enter buy price for {name}:',
-        // FX add modal
-        'fx.addTitle': 'Add {name} to Portfolio',
-        'fx.type': 'Currency Type',
-        'fx.qty': 'Quantity',
-        'fx.price': 'Buy Price',
-        'fx.qtyPh': 'Enter quantity',
-        'fx.pricePh': 'Enter buy price',
-        'fx.submit': 'Add to Portfolio',
         // Ticker labels
         'ticker.bist100': 'BIST100',
         'ticker.usdtry': 'USD/TRY',
