@@ -3576,6 +3576,11 @@ table td[data-label="MIKTAR"] {
     margin: 0;
     grid-template-columns: repeat(2, minmax(180px, 1fr));
 }
+/* Total Return is the grand total of the other cards: span the full 2-col row
+   so 2+2+1 reads intentionally. On mobile the grid collapses to 1 col anyway. */
+.new-portfolio-overview .new-portfolio-summary .total-return-card {
+    grid-column: 1 / -1;
+}
 .allocation-card {
     flex: 1 1 320px;
     min-width: 290px;

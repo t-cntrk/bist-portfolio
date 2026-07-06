@@ -116,8 +116,9 @@ export const translations = {
         // Summary
         'summary.totalInvestment': 'Toplam Yatırım',
         'summary.currentValue': 'Güncel Değer',
-        'summary.totalPnL': 'Toplam Kar/Zarar',
+        'summary.totalPnL': 'Gerçekleşmemiş Kar/Zarar',
         'summary.pnlPct': 'Kar/Zarar %',
+        'summary.totalReturn': 'Toplam Getiri',
         // Chart ranges
         'chart.1w': '1 Hafta',
         'chart.1m': '1 Ay',
@@ -265,8 +266,9 @@ export const translations = {
         // Summary
         'summary.totalInvestment': 'Total Investment',
         'summary.currentValue': 'Current Value',
-        'summary.totalPnL': 'Total P/L',
+        'summary.totalPnL': 'Unrealized P/L',
         'summary.pnlPct': 'P/L %',
+        'summary.totalReturn': 'Total Return',
         // Chart ranges
         'chart.1w': '1 Week',
         'chart.1m': '1 Month',

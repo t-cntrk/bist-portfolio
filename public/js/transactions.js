@@ -8,7 +8,7 @@
  */
 import { createApiRequest, handleApiResponse } from './api.js';
 import { escapeHtml } from './dom-helpers.js';
-import { formatNumber } from './formatters.js';
+import { formatNumber, formatTRY } from './formatters.js';
 
 const TX_TYPE_LABELS = {
     buy: () => (window.t ? window.t('tx.buy') : 'Alış'),
@@ -57,33 +57,57 @@ function realizedCellHTML(tx) {
 // Aggregate realized P/L across TRY-denominated sells, shown in the history
 // header. Non-TRY sells (currently only GC=F/USD) are excluded rather than
 // summed across currencies; hidden entirely until at least one sell exists.
+// Returns the TRY realized total (0 when no TRY sells) so Total Return can reuse it.
 function updateRealizedTotal(rows) {
     const container = document.getElementById('txRealizedTotal');
     const valueEl = document.getElementById('txRealizedTotalValue');
-    if (!container || !valueEl) return;
 
     const sells = rows.filter(tx =>
         tx.transaction_type === 'sell' &&
         tx.realized_pl != null && !isNaN(Number(tx.realized_pl)) &&
         (!tx.currency || tx.currency === 'TRY')
     );
+    const total = sells.reduce((sum, tx) => sum + Number(tx.realized_pl), 0);
+
+    if (!container || !valueEl) return total;
+
     if (sells.length === 0) {
         container.style.display = 'none';
-        return;
+        return total;
     }
-    const total = sells.reduce((sum, tx) => sum + Number(tx.realized_pl), 0);
     const sign = total > 0 ? '+' : '';
     valueEl.textContent = `${sign}${formatNumber(total, 2)} ₺`;
     valueEl.className = total > 0 ? 'profit' : (total < 0 ? 'loss' : 'neutral');
     container.style.display = '';
+    return total;
 }
 
-export async function renderTransactions() {
+// Total Return = Unrealized P/L (passed in by renderUnifiedPortfolio, always TRY)
+// + Realized P/L (TRY sells only). Both inputs are TRY-denominated, so the total
+// never mixes currencies. Always visible: equals the unrealized figure when no
+// realized sells exist.
+function updateTotalReturn(unrealizedPL, realizedTotalTRY) {
+    const card = document.getElementById('newTotalReturnCard');
+    const valueEl = document.getElementById('newTotalReturn');
+    if (!valueEl) return;
+
+    const total = (Number(unrealizedPL) || 0) + (Number(realizedTotalTRY) || 0);
+
+    const profitClass = total >= 0 ? 'profit' : 'loss';
+    const sign = total >= 0 ? '+' : '';
+    valueEl.innerHTML = `<strong>${sign}${escapeHtml(formatTRY(total))}</strong>`;
+    if (card) card.className = `new-summary-card total-return-card ${profitClass}`;
+}
+
+// unrealizedPL is passed by renderUnifiedPortfolio (its only caller) so Total
+// Return can combine it with the realized total computed here.
+export async function renderTransactions(unrealizedPL = 0) {
     const tbody = document.getElementById('transactionHistoryBody');
     if (!tbody) return;
 
     const rows = await fetchTransactions();
-    updateRealizedTotal(rows);
+    const realizedTotalTRY = updateRealizedTotal(rows);
+    updateTotalReturn(unrealizedPL, realizedTotalTRY);
 
     if (rows.length === 0) {
         const empty = window.t ? window.t('tx.empty') : 'Henüz işlem bulunmuyor';

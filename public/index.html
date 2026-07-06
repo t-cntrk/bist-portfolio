@@ -350,12 +350,17 @@
                             <div class="new-summary-value" id="newCurrentValue">0.00 ₺</div>
                         </div>
                         <div class="new-summary-card" id="newTotalProfitCard" style="--card-index: 2;">
-                            <div class="new-summary-label" data-i18n="summary.totalPnL">Toplam Kar/Zarar</div>
+                            <div class="new-summary-label" data-i18n="summary.totalPnL">Gerçekleşmemiş Kar/Zarar</div>
                             <div class="new-summary-value" id="newTotalProfit">0.00 ₺</div>
                         </div>
                         <div class="new-summary-card" id="newTotalProfitPercentCard" style="--card-index: 3;">
                             <div class="new-summary-label" data-i18n="summary.pnlPct">Kar/Zarar %</div>
                             <div class="new-summary-value" id="newTotalProfitPercent">%0.00</div>
+                        </div>
+                        <!-- Total Return = Unrealized P/L + Realized P/L (TRY sells); filled by transactions.js -->
+                        <div class="new-summary-card total-return-card" id="newTotalReturnCard" style="--card-index: 4;">
+                            <div class="new-summary-label" data-i18n="summary.totalReturn">Toplam Getiri</div>
+                            <div class="new-summary-value" id="newTotalReturn">0.00 ₺</div>
                         </div>
                     </div>
 

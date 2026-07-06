@@ -133,6 +133,9 @@ export async function renderUnifiedPortfolio() {
             setAllocationSegment('stock', []);
             setAllocationSegment('fx', []);
             updateSummaryCards(0, 0, 0);
+            // Even with no holdings, past sells may carry realized P/L: keep the
+            // history table and Total Return card in sync (unrealized = 0).
+            if (window.renderTransactions) window.renderTransactions(0);
             return;
         }
 
@@ -197,7 +200,8 @@ export async function renderUnifiedPortfolio() {
         updateSummaryCards(totalInvestmentValue, totalCurrentValue, totalProfitValue);
 
         // Keep the transaction-history ledger in sync with the portfolio render.
-        if (window.renderTransactions) window.renderTransactions();
+        // Pass the (TRY) unrealized P/L so the Total Return card can add realized.
+        if (window.renderTransactions) window.renderTransactions(totalProfitValue);
 
     } catch (error) {
         console.error('Error rendering unified portfolio:', error);
