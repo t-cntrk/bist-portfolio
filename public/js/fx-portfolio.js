@@ -70,8 +70,10 @@ export function createModernFxPortfolioRowHTML(item, fxData) {
     const lang = window.getCurrentLang ? window.getCurrentLang() : 'tr';
 
     // Escape user-controlled symbol/name; delete uses data-* + delegation (app.js).
-    const escSymbol = escapeHtml(cleanSymbol);
-    const escName   = escapeHtml(getCurrencyName(cleanSymbol));
+    const escSymbol     = escapeHtml(cleanSymbol);
+    const escFullSymbol = escapeHtml(item.symbol);
+    const escName       = escapeHtml(getCurrencyName(cleanSymbol));
+    const sellLabel     = escapeHtml(window.t ? window.t('modal.sellSubmit') : 'Sat');
 
     return `<tr>
         <td data-label="VARLIK">
@@ -87,9 +89,14 @@ export function createModernFxPortfolioRowHTML(item, fxData) {
         <td data-label="KAR/ZARAR (₺)" class="${profitLossClass}">${sign}${formatCurrency(profitLoss)}</td>
         <td data-label="KAR/ZARAR (%)" class="${profitLossClass}">${sign}${profitLossPct.toFixed(2)}%</td>
         <td data-label="İŞLEM">
-            <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="döviz öğesini" title="Sil">
-                <i>✕</i>
-            </button>
+            <div class="portfolio-actions">
+                <button class="btn-action sell-portfolio-btn" data-id="${item.id}" data-symbol="${escFullSymbol}" data-name="${escName}" data-type="fx" data-quantity="${item.quantity}" data-price="${item.purchase_price}" title="${sellLabel}">
+                    <span>${sellLabel}</span>
+                </button>
+                <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="döviz öğesini" title="Sil">
+                    <i>✕</i>
+                </button>
+            </div>
         </td>
     </tr>`;
 }

@@ -90,6 +90,14 @@ function initializeDatabase() {
     // actual trade time, kept separate from `created_at` (the immutable insert /
     // audit stamp) so a future import path can record historical trades without
     // rewriting when the row was actually persisted.
+    //
+    // `realized_pl` is the profit/loss crystallized by a SELL, computed at sale
+    // time as quantity * (sell_price - weighted_avg_cost). It is NULL for buys.
+    // Persisted (not derived) because realized P/L is a point-in-time financial
+    // fact: it depends on the average cost that applied at the instant of the
+    // sale, and storing it keeps that truth immutable rather than re-deriving it
+    // by replaying the whole ledger (which would drift if the averaging logic or
+    // any historical row ever changed). See portfolioController.sellAsset.
     db.run(`CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -100,6 +108,7 @@ function initializeDatabase() {
       unit_price REAL NOT NULL,
       total_amount REAL NOT NULL,
       currency TEXT NOT NULL DEFAULT 'TRY',
+      realized_pl REAL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       executed_at DATETIME,
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -193,6 +202,14 @@ function initializeDatabase() {
     });
     db.run(`UPDATE transactions SET executed_at = created_at WHERE executed_at IS NULL`, (err) => {
       if (err) console.error('Error backfilling executed_at:', err);
+    });
+
+    // Realized P/L on SELL rows (NULL for buys). No backfill: every pre-migration
+    // row is a buy, so NULL is already the correct value for existing data.
+    db.run(`ALTER TABLE transactions ADD COLUMN realized_pl REAL`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding realized_pl column:', err);
+      }
     });
 
     // Speeds up per-user (and per-symbol) transaction-history reads.

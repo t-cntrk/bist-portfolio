@@ -3576,6 +3576,11 @@ table td[data-label="MIKTAR"] {
     margin: 0;
     grid-template-columns: repeat(2, minmax(180px, 1fr));
 }
+/* Total Return is the grand total of the other cards: span the full 2-col row
+   so 2+2+1 reads intentionally. On mobile the grid collapses to 1 col anyway. */
+.new-portfolio-overview .new-portfolio-summary .total-return-card {
+    grid-column: 1 / -1;
+}
 .allocation-card {
     flex: 1 1 320px;
     min-width: 290px;
@@ -3766,6 +3771,54 @@ table td[data-label="MIKTAR"] {
 .new-portfolio-update {
     color: rgba(255, 255, 255, 0.6);
     font-size: 14px;
+}
+
+/* İşlem Geçmişi filtreleri (client-side: tür + varlık) */
+.tx-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tx-filter-group {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+}
+.tx-filter-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: calc(var(--radius-sm) - 3px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tx-filter-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+.tx-filter-btn.active {
+    background: var(--color-accent-green);
+    color: #0b1220;
+}
+.tx-symbol-filter {
+    min-width: 150px;
+}
+@media (max-width: 768px) {
+    .tx-filters { flex-direction: column; align-items: stretch; }
+    .tx-filter-group { justify-content: space-between; }
+    .tx-filter-btn { flex: 1; text-align: center; padding: 8px 10px; }
+    .tx-symbol-filter { width: 100%; }
 }
 
 /* Portföy Tablosu */
@@ -4456,6 +4509,51 @@ table td[data-label="MIKTAR"] {
     background: linear-gradient(180deg, rgba(239, 68, 68, 0.18), rgba(239, 68, 68, 0.12)) !important;
     border-color: rgba(239, 68, 68, 0.45) !important;
     box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(239, 68, 68, 0.28) !important;
+}
+
+/* Action cell: keep the Sell + Delete buttons side by side and centered */
+.portfolio-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Sell button — emerald pill, distinct from the red delete and the blue-green add */
+.btn-action.sell-portfolio-btn {
+    width: auto;
+    height: 28px;
+    min-width: 44px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.10));
+    color: #6ee7b7;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 6px rgba(16, 185, 129, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+.btn-action.sell-portfolio-btn span {
+    color: inherit;
+    font-weight: 700;
+}
+.btn-action.sell-portfolio-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(16, 185, 129, 0.16));
+    border-color: rgba(16, 185, 129, 0.55);
+    color: #d1fae5;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(16, 185, 129, 0.28);
+}
+.btn-action.sell-portfolio-btn:active {
+    transform: translateY(0);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.28), rgba(16, 185, 129, 0.20));
 }
 
 /* Center numeric columns (2 through 7) with flex to ensure perfect centering */

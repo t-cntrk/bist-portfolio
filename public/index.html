@@ -350,12 +350,17 @@
                             <div class="new-summary-value" id="newCurrentValue">0.00 ₺</div>
                         </div>
                         <div class="new-summary-card" id="newTotalProfitCard" style="--card-index: 2;">
-                            <div class="new-summary-label" data-i18n="summary.totalPnL">Toplam Kar/Zarar</div>
+                            <div class="new-summary-label" data-i18n="summary.totalPnL">Gerçekleşmemiş Kar/Zarar</div>
                             <div class="new-summary-value" id="newTotalProfit">0.00 ₺</div>
                         </div>
                         <div class="new-summary-card" id="newTotalProfitPercentCard" style="--card-index: 3;">
                             <div class="new-summary-label" data-i18n="summary.pnlPct">Kar/Zarar %</div>
                             <div class="new-summary-value" id="newTotalProfitPercent">%0.00</div>
+                        </div>
+                        <!-- Total Return = Unrealized P/L + Realized P/L (TRY sells); filled by transactions.js -->
+                        <div class="new-summary-card total-return-card" id="newTotalReturnCard" style="--card-index: 4;">
+                            <div class="new-summary-label" data-i18n="summary.totalReturn">Toplam Getiri</div>
+                            <div class="new-summary-value" id="newTotalReturn">0.00 ₺</div>
                         </div>
                     </div>
 
@@ -397,6 +402,22 @@
             <div class="new-unified-portfolio transaction-history">
                 <div class="new-portfolio-header">
                     <div class="new-portfolio-title" data-i18n="tx.title">İşlem Geçmişi</div>
+                    <!-- Aggregate realized P/L (TRY sells); filled by transactions.js, hidden until a sell exists -->
+                    <div class="new-portfolio-update" id="txRealizedTotal" style="display:none;">
+                        <span data-i18n="tx.realizedTotal">Gerçekleşen K/Z</span>:
+                        <strong id="txRealizedTotalValue"></strong>
+                    </div>
+                </div>
+                <!-- Transaction filters (client-side; type + symbol) -->
+                <div class="tx-filters" id="txFilters">
+                    <div class="tx-filter-group" role="group" aria-label="İşlem türü filtresi">
+                        <button type="button" class="tx-filter-btn active" data-txtype="all" data-i18n="tx.filterAll">Tümü</button>
+                        <button type="button" class="tx-filter-btn" data-txtype="buy" data-i18n="tx.buy">Alış</button>
+                        <button type="button" class="tx-filter-btn" data-txtype="sell" data-i18n="tx.sell">Satış</button>
+                    </div>
+                    <select id="txSymbolFilter" class="modern-select tx-symbol-filter" aria-label="Varlık filtresi">
+                        <option value="all" data-i18n="tx.filterAllSymbols">Tüm Varlıklar</option>
+                    </select>
                 </div>
                 <table class="new-portfolio-table">
                     <thead>
@@ -407,6 +428,7 @@
                             <th data-i18n="tx.qty">Miktar</th>
                             <th data-i18n="tx.unitPrice">Birim Fiyat</th>
                             <th data-i18n="tx.total">Toplam</th>
+                            <th data-i18n="tx.realized">K/Z</th>
                         </tr>
                     </thead>
                     <tbody id="transactionHistoryBody">

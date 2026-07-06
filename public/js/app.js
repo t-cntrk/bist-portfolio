@@ -65,6 +65,17 @@ function setupEventDelegation() {
             const fxName = target.getAttribute('data-fxname') || 'XAU/TRY';
             functionRegistry.showFxPortfolioModal(fxName);
         },
+        '.sell-portfolio-btn': (target) => {
+            if (!window.showSellModal) return;
+            window.showSellModal({
+                id: target.getAttribute('data-id'),
+                symbol: target.getAttribute('data-symbol') || '',
+                name: target.getAttribute('data-name') || '',
+                type: target.getAttribute('data-type') || 'stock',
+                available: target.getAttribute('data-quantity') || '0',
+                avgCost: target.getAttribute('data-price') || '0'
+            });
+        },
         '.delete-portfolio-btn': (target) => {
             const itemId = target.getAttribute('data-id');
             const symbol = target.getAttribute('data-symbol') || '';

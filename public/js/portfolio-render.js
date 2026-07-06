@@ -42,8 +42,10 @@ function createModernPortfolioRowHTML(item, currentPrice) {
     // Escape user-controlled symbol/name before interpolating into HTML.
     // Delete action is wired via data-* attributes + event delegation (app.js)
     // instead of an inline onclick, so the symbol never lands in a JS string.
-    const escSymbol = escapeHtml(cleanSymbol);
-    const escName   = escapeHtml(stockName);
+    const escSymbol     = escapeHtml(cleanSymbol);
+    const escFullSymbol = escapeHtml(item.symbol);
+    const escName       = escapeHtml(stockName);
+    const sellLabel     = escapeHtml(window.t ? window.t('modal.sellSubmit') : 'Sat');
 
     return `<tr>
         <td data-label="HISSE">
@@ -59,9 +61,14 @@ function createModernPortfolioRowHTML(item, currentPrice) {
         <td data-label="K/Z (₺)" class="${profitLossClass}">${sign}${formatCurrency(profitLoss)}</td>
         <td data-label="K/Z (%)" class="${profitLossClass}">${sign}${profitLossPct.toFixed(2)}%</td>
         <td data-label="İŞLEM">
-            <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="hisse senedini" title="Sil">
-                <i>✕</i>
-            </button>
+            <div class="portfolio-actions">
+                <button class="btn-action sell-portfolio-btn" data-id="${item.id}" data-symbol="${escFullSymbol}" data-name="${escName}" data-type="stock" data-quantity="${item.quantity}" data-price="${item.purchase_price}" title="${sellLabel}">
+                    <span>${sellLabel}</span>
+                </button>
+                <button class="btn-action delete-portfolio-btn" data-id="${item.id}" data-symbol="${escSymbol}" data-itemtype="hisse senedini" title="Sil">
+                    <i>✕</i>
+                </button>
+            </div>
         </td>
     </tr>`;
 }
@@ -126,6 +133,9 @@ export async function renderUnifiedPortfolio() {
             setAllocationSegment('stock', []);
             setAllocationSegment('fx', []);
             updateSummaryCards(0, 0, 0);
+            // Even with no holdings, past sells may carry realized P/L: keep the
+            // history table and Total Return card in sync (unrealized = 0).
+            if (window.renderTransactions) window.renderTransactions(0);
             return;
         }
 
@@ -190,7 +200,8 @@ export async function renderUnifiedPortfolio() {
         updateSummaryCards(totalInvestmentValue, totalCurrentValue, totalProfitValue);
 
         // Keep the transaction-history ledger in sync with the portfolio render.
-        if (window.renderTransactions) window.renderTransactions();
+        // Pass the (TRY) unrealized P/L so the Total Return card can add realized.
+        if (window.renderTransactions) window.renderTransactions(totalProfitValue);
 
     } catch (error) {
         console.error('Error rendering unified portfolio:', error);
