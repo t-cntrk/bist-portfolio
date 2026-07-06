@@ -3773,6 +3773,54 @@ table td[data-label="MIKTAR"] {
     font-size: 14px;
 }
 
+/* İşlem Geçmişi filtreleri (client-side: tür + varlık) */
+.tx-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tx-filter-group {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+}
+.tx-filter-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: calc(var(--radius-sm) - 3px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tx-filter-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+.tx-filter-btn.active {
+    background: var(--color-accent-green);
+    color: #0b1220;
+}
+.tx-symbol-filter {
+    min-width: 150px;
+}
+@media (max-width: 768px) {
+    .tx-filters { flex-direction: column; align-items: stretch; }
+    .tx-filter-group { justify-content: space-between; }
+    .tx-filter-btn { flex: 1; text-align: center; padding: 8px 10px; }
+    .tx-symbol-filter { width: 100%; }
+}
+
 /* Portföy Tablosu */
 .new-portfolio-table {
     width: 100%;

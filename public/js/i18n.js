@@ -92,6 +92,9 @@ export const translations = {
         'tx.realized': 'K/Z',
         'tx.realizedTotal': 'Gerçekleşen K/Z',
         'tx.empty': 'Henüz işlem bulunmuyor',
+        'tx.filterAll': 'Tümü',
+        'tx.filterAllSymbols': 'Tüm Varlıklar',
+        'tx.noMatch': 'Eşleşen işlem bulunmuyor',
         // Messages
         'msg.addSuccess': 'Portföye başarıyla eklendi',
         'msg.addError': 'Portföye ekleme hatası: ',
@@ -228,6 +231,9 @@ export const translations = {
         'tx.realized': 'P/L',
         'tx.realizedTotal': 'Realized P/L',
         'tx.empty': 'No transactions yet',
+        'tx.filterAll': 'All',
+        'tx.filterAllSymbols': 'All Assets',
+        'tx.noMatch': 'No matching transactions',
         // Ticker labels
         'ticker.bist100': 'BIST100',
         'ticker.usdtry': 'USD/TRY',

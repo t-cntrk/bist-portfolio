@@ -408,6 +408,17 @@
                         <strong id="txRealizedTotalValue"></strong>
                     </div>
                 </div>
+                <!-- Transaction filters (client-side; type + symbol) -->
+                <div class="tx-filters" id="txFilters">
+                    <div class="tx-filter-group" role="group" aria-label="İşlem türü filtresi">
+                        <button type="button" class="tx-filter-btn active" data-txtype="all" data-i18n="tx.filterAll">Tümü</button>
+                        <button type="button" class="tx-filter-btn" data-txtype="buy" data-i18n="tx.buy">Alış</button>
+                        <button type="button" class="tx-filter-btn" data-txtype="sell" data-i18n="tx.sell">Satış</button>
+                    </div>
+                    <select id="txSymbolFilter" class="modern-select tx-symbol-filter" aria-label="Varlık filtresi">
+                        <option value="all" data-i18n="tx.filterAllSymbols">Tüm Varlıklar</option>
+                    </select>
+                </div>
                 <table class="new-portfolio-table">
                     <thead>
                         <tr>
