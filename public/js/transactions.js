@@ -9,6 +9,9 @@
 import { createApiRequest, handleApiResponse } from './api.js';
 import { escapeHtml } from './dom-helpers.js';
 import { formatNumber, formatTRY } from './formatters.js';
+import { buildCsv, downloadCsv } from './csv.js';
+import { exportTransactionsXlsx } from './excel.js';
+import { TX_EXPORT_COLUMNS } from './transaction-schema.js';
 
 const TX_TYPE_LABELS = {
     buy: () => (window.t ? window.t('tx.buy') : 'Alış'),
@@ -97,6 +100,58 @@ function updateTotalReturn(unrealizedPL, realizedTotalTRY) {
     const sign = total >= 0 ? '+' : '';
     valueEl.innerHTML = `<strong>${sign}${escapeHtml(formatTRY(total))}</strong>`;
     if (card) card.className = `new-summary-card total-return-card ${profitClass}`;
+}
+
+// ─── Exports (CSV + Excel) ────────────────────────────────────────────────────
+// Both formats share one column schema (TX_EXPORT_COLUMNS in transaction-schema.js)
+// so the transaction→export mapping is never duplicated. Each export reads the
+// already-fetched, unfiltered allTransactions — the FULL ledger, in the same order
+// as the history table — so neither makes an extra request nor reflects the
+// active filter. csv.js/excel.js hold the format mechanics; this file only wires
+// them to the ledger and the buttons.
+
+// Today's local date as YYYY-MM-DD, shared by both export filenames.
+function todayStamp() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Export the full ledger to CSV. Numbers are emitted as raw dot-decimal strings
+// (not formatNumber(), whose tr-TR decimal comma would corrupt the CSV); csv.js
+// handles RFC-4180 escaping.
+function exportTransactionsCsv() {
+    if (allTransactions.length === 0) return;
+    const headers = TX_EXPORT_COLUMNS.map(c => c.header);
+    const rows = allTransactions.map(tx => TX_EXPORT_COLUMNS.map(c => {
+        const v = c.get(tx);
+        return v == null ? '' : String(v);
+    }));
+    downloadCsv(`transactions-${todayStamp()}.csv`, buildCsv(headers, rows));
+}
+
+// Export the full ledger to a real .xlsx (styled, typed cells). ExcelJS loads
+// lazily on first click; the button is disabled while the workbook builds.
+async function exportTransactionsExcel() {
+    if (allTransactions.length === 0) return;
+    const btn = document.getElementById('txExportExcelBtn');
+    try {
+        if (btn) btn.disabled = true;
+        await exportTransactionsXlsx(allTransactions, TX_EXPORT_COLUMNS, `Portfolio_Transactions_${todayStamp()}.xlsx`);
+    } catch (err) {
+        console.error('Excel export failed:', err);
+    } finally {
+        updateExportButtons();
+    }
+}
+
+// Reflect whether there is anything to export on both buttons' enabled state.
+function updateExportButtons() {
+    const disabled = allTransactions.length === 0;
+    const csvBtn = document.getElementById('txExportBtn');
+    const xlsxBtn = document.getElementById('txExportExcelBtn');
+    if (csvBtn) csvBtn.disabled = disabled;
+    if (xlsxBtn) xlsxBtn.disabled = disabled;
 }
 
 // ─── Client-side filtering ────────────────────────────────────────────────────
@@ -218,6 +273,13 @@ function ensureFiltersBound() {
             renderTransactionRows();
         });
     }
+
+    // Export the full ledger. Bound directly here (like the filters) rather than
+    // via app.js delegation, keeping all history controls self-contained.
+    const csvBtn = document.getElementById('txExportBtn');
+    if (csvBtn) csvBtn.addEventListener('click', exportTransactionsCsv);
+    const xlsxBtn = document.getElementById('txExportExcelBtn');
+    if (xlsxBtn) xlsxBtn.addEventListener('click', exportTransactionsExcel);
     filtersBound = true;
 }
 
@@ -234,6 +296,7 @@ export async function renderTransactions(unrealizedPL = 0) {
 
     ensureFiltersBound();
     populateSymbolFilter(allTransactions);
+    updateExportButtons();
     renderTransactionRows();
 }
 

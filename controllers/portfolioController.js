@@ -262,8 +262,10 @@ exports.getTransactions = (req, res) => {
     // Newest first. Optional symbol filter supports future per-asset views.
     // realized_pl is included so history can show the P/L crystallized by sells
     // (NULL for buys); currency lets the client label amounts honestly instead
-    // of assuming TRY (GC=F sells are USD-denominated).
-    let sql = 'SELECT id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, realized_pl, currency, created_at FROM transactions WHERE user_id = ?';
+    // of assuming TRY (GC=F sells are USD-denominated). executed_at (the real
+    // trade time) is exposed for CSV export; it equals created_at for every
+    // non-imported row and is ignored by the history renderer.
+    let sql = 'SELECT id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, realized_pl, currency, created_at, executed_at FROM transactions WHERE user_id = ?';
     const params = [userId];
     if (symbol) {
         sql += ' AND symbol = ?';

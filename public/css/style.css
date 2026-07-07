@@ -3814,11 +3814,44 @@ table td[data-label="MIKTAR"] {
 .tx-symbol-filter {
     min-width: 150px;
 }
+.tx-export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #e5e7eb;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tx-export-btn:hover {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: var(--color-accent-green);
+    color: #ffffff;
+}
+.tx-export-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.tx-export-btn--excel:hover {
+    background: rgba(16, 124, 65, 0.25);
+    border-color: #1d8f4e;
+}
+.tx-export-actions {
+    display: inline-flex;
+    gap: 8px;
+}
 @media (max-width: 768px) {
     .tx-filters { flex-direction: column; align-items: stretch; }
     .tx-filter-group { justify-content: space-between; }
     .tx-filter-btn { flex: 1; text-align: center; padding: 8px 10px; }
     .tx-symbol-filter { width: 100%; }
+    .tx-export-actions { flex-direction: column; }
+    .tx-export-btn { width: 100%; justify-content: center; }
 }
 
 /* Portföy Tablosu */
