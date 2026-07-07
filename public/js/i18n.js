@@ -95,6 +95,8 @@ export const translations = {
         'tx.filterAll': 'Tümü',
         'tx.filterAllSymbols': 'Tüm Varlıklar',
         'tx.noMatch': 'Eşleşen işlem bulunmuyor',
+        'tx.export': 'CSV İndir',
+        'tx.exportExcel': 'Excel İndir',
         // Messages
         'msg.addSuccess': 'Portföye başarıyla eklendi',
         'msg.addError': 'Portföye ekleme hatası: ',
@@ -234,6 +236,8 @@ export const translations = {
         'tx.filterAll': 'All',
         'tx.filterAllSymbols': 'All Assets',
         'tx.noMatch': 'No matching transactions',
+        'tx.export': 'Export CSV',
+        'tx.exportExcel': 'Export Excel',
         // Ticker labels
         'ticker.bist100': 'BIST100',
         'ticker.usdtry': 'USD/TRY',
