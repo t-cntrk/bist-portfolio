@@ -15,12 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transaction history view showing per-sell realized P/L.
 - Client-side transaction filtering by type (Buy / Sell / All) and by symbol.
 - Per-transaction `currency` and `executed_at` (trade time) columns on the ledger, with currency-aware amounts.
+- CSV export of the transaction history — the full ledger (not the active filter view) — with RFC 4180 escaping and a UTF-8 BOM for correct display in Excel.
+- Excel (`.xlsx`) export as a formatted workbook: bold, filled header row, frozen header, auto filter, content-fit columns, numeric cell formats, and green/red realized P/L.
+- Shared transaction-to-export schema, reused by both the CSV and Excel exports so the column set and mapping are defined once.
 
 ### Changed
 - Renamed the portfolio profit/loss summary card to "Unrealized P/L" (TR/EN) to distinguish it from realized and total figures.
 
 ### Notes
 - Realized-P/L and Total Return figures aggregate only TRY-denominated amounts. Non-TRY sells (e.g. USD-quoted gold) are shown per row but excluded from cross-currency totals.
+- Both export formats read the same in-memory transaction data and share one column mapping, so their contents always match the transaction history.
 
 ## [1.1.0] - 2024-12-19
 
