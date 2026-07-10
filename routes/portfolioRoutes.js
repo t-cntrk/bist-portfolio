@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const portfolioController = require('../controllers/portfolioController');
-const { authenticateToken, validateCSRF } = require('../middleware/securityMiddleware');
+const { authenticateToken, validateCSRF, importLimiter } = require('../middleware/securityMiddleware');
 
 const addAssetValidation = [
   body('symbol')
@@ -66,6 +66,14 @@ router.post('/portfolio', authenticateToken, validateCSRF, addAssetValidation, h
  * @desc    Sell part or all of an existing position (records a SELL in the ledger)
  */
 router.post('/portfolio/sell', authenticateToken, validateCSRF, sellAssetValidation, handleValidation, portfolioController.sellAsset);
+
+/**
+ * @route   POST /api/portfolio/import
+ * @desc    Validate + replay an imported CSV transaction history (preview when
+ *          confirm !== true, commit when confirm === true). Per-row validation and
+ *          business rules are enforced inside the controller.
+ */
+router.post('/portfolio/import', importLimiter, authenticateToken, validateCSRF, portfolioController.importTransactions);
 
 /**
  * @route   DELETE /api/portfolio/:id

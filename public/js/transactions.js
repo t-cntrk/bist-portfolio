@@ -12,6 +12,7 @@ import { formatNumber, formatTRY } from './formatters.js';
 import { buildCsv, downloadCsv } from './csv.js';
 import { exportTransactionsXlsx } from './excel.js';
 import { TX_EXPORT_COLUMNS } from './transaction-schema.js';
+import { openCsvImportDialog } from './transaction-import.js';
 
 const TX_TYPE_LABELS = {
     buy: () => (window.t ? window.t('tx.buy') : 'Alış'),
@@ -280,6 +281,8 @@ function ensureFiltersBound() {
     if (csvBtn) csvBtn.addEventListener('click', exportTransactionsCsv);
     const xlsxBtn = document.getElementById('txExportExcelBtn');
     if (xlsxBtn) xlsxBtn.addEventListener('click', exportTransactionsExcel);
+    const importBtn = document.getElementById('txImportBtn');
+    if (importBtn) importBtn.addEventListener('click', openCsvImportDialog);
     filtersBound = true;
 }
 

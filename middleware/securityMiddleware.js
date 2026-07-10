@@ -96,6 +96,17 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// CSV import limiter. Import is a multi-step flow (preview + confirm, plus the
+// occasional retry), so it needs more headroom than the auth limiter while still
+// bounding the replay work an authenticated client can trigger.
+const importLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  message: { message: 'Çok fazla içe aktarma isteği, lütfen biraz sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Forgot password rate limiter
 const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -279,6 +290,7 @@ module.exports = {
   authLimiter,
   forgotPasswordLimiter,
   generalLimiter,
+  importLimiter,
   
   // Authentication
   authenticateToken,

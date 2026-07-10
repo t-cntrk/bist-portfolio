@@ -3841,6 +3841,10 @@ table td[data-label="MIKTAR"] {
     background: rgba(16, 124, 65, 0.25);
     border-color: #1d8f4e;
 }
+.tx-export-btn--import:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #3b82f6;
+}
 .tx-export-actions {
     display: inline-flex;
     gap: 8px;

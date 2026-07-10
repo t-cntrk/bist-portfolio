@@ -1,4 +1,5 @@
 const { getConnection } = require('../services/databaseService');
+const { validateImportRows, countDuplicateRows } = require('../services/importValidation');
 
 // Currency of a transaction's monetary amounts (unit_price, total_amount),
 // resolved from the symbol at write time and then stored immutably on the ledger
@@ -47,6 +48,105 @@ const getTransactionCurrency = (rawSymbol) => {
     return 'TRY';
 };
 
+// ─── Promisified DB helpers + shared buy/sell operations ──────────────────────
+// The weighted-average accounting, oversell rules and realized-P/L math live here
+// ONCE, so both the HTTP handlers (addAsset/sellAsset) and the CSV import replay
+// use the exact same logic — import never bypasses or re-implements it.
+const dbGet = (db, sql, params = []) => new Promise((resolve, reject) =>
+    db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row))));
+const dbAll = (db, sql, params = []) => new Promise((resolve, reject) =>
+    db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))));
+const dbRun = (db, sql, params = []) => new Promise((resolve, reject) =>
+    db.run(sql, params, function (err) { return err ? reject(err) : resolve(this); }));
+
+// A business-rule failure carrying the HTTP status the caller should surface.
+class BusinessError extends Error {
+    constructor(status, message) { super(message); this.name = 'BusinessError'; this.status = status; }
+}
+
+const SELL_EPS = 1e-9;
+
+// Merge a buy into an existing position (summing quantity, recomputing the
+// weighted-average cost) or open a new position. Returns the same result shape
+// the add endpoint has always returned.
+async function mergeOrInsertPosition(db, userId, { symbol, quantity, purchase, type }) {
+    const existing = await dbGet(db,
+        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
+        [userId, symbol, type]);
+
+    if (existing) {
+        const totalQuantity = existing.quantity + quantity;
+        const avgPrice = ((existing.purchase_price * existing.quantity) + (purchase * quantity)) / totalQuantity;
+        await dbRun(db, 'UPDATE portfolios SET quantity = ?, purchase_price = ? WHERE id = ? AND user_id = ?',
+            [totalQuantity, avgPrice, existing.id, userId]);
+        return { id: existing.id, merged: true, quantity: totalQuantity, purchase_price: avgPrice };
+    }
+
+    try {
+        const r = await dbRun(db,
+            'INSERT INTO portfolios (user_id, symbol, quantity, purchase_price, type) VALUES (?, ?, ?, ?, ?)',
+            [userId, symbol, quantity, purchase, type]);
+        return { id: r.lastID };
+    } catch (err) {
+        // UNIQUE index guards against a concurrent insert racing the lookup above.
+        if (err && err.code === 'SQLITE_CONSTRAINT') {
+            throw new BusinessError(409, 'Bu varlık az önce eklendi, lütfen tekrar deneyin');
+        }
+        throw err;
+    }
+}
+
+// Append an immutable BUY row to the ledger (this buy's own quantity/price).
+function insertBuyLedger(db, { userId, symbol, type, quantity, purchase, executedAt }) {
+    return dbRun(db,
+        `INSERT INTO transactions
+            (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, created_at, executed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE(?, CURRENT_TIMESTAMP))`,
+        [userId, symbol, type, 'buy', quantity, purchase, quantity * purchase, getTransactionCurrency(symbol), executedAt || null]);
+}
+
+// Apply a sell to a position: enforces "must be held" and "cannot oversell",
+// crystallizes realized P/L against the fixed average cost (never recomputed),
+// and updates or removes the position. Returns the position result plus the
+// realized figures for the ledger row.
+async function applySellPosition(db, userId, { symbol, quantity, price, type }) {
+    const position = await dbGet(db,
+        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
+        [userId, symbol, type]);
+
+    if (!position) throw new BusinessError(404, 'Satılacak varlık portföyünüzde bulunamadı');
+    if (quantity > position.quantity + SELL_EPS) {
+        throw new BusinessError(400, `Sahip olduğunuzdan fazlasını satamazsınız (mevcut miktar: ${position.quantity})`);
+    }
+
+    const avgCost = position.purchase_price;
+    const proceeds = quantity * price;
+    const realizedPl = quantity * (price - avgCost);
+    const remaining = position.quantity - quantity;
+    const fullSell = remaining <= SELL_EPS;
+
+    if (fullSell) {
+        const r = await dbRun(db, 'DELETE FROM portfolios WHERE id = ? AND user_id = ? AND quantity >= ?',
+            [position.id, userId, quantity - SELL_EPS]);
+        if (r.changes === 0) throw new BusinessError(409, 'Pozisyon değişti, lütfen tekrar deneyin');
+        return { positionResult: { id: position.id, sold: quantity, remaining: 0, closed: true, realized_pl: realizedPl, purchase_price: avgCost }, realizedPl, proceeds };
+    }
+
+    const r = await dbRun(db, 'UPDATE portfolios SET quantity = quantity - ? WHERE id = ? AND user_id = ? AND quantity >= ?',
+        [quantity, position.id, userId, quantity]);
+    if (r.changes === 0) throw new BusinessError(409, 'Pozisyon değişti, lütfen tekrar deneyin');
+    return { positionResult: { id: position.id, sold: quantity, remaining, closed: false, realized_pl: realizedPl, purchase_price: avgCost }, realizedPl, proceeds };
+}
+
+// Append an immutable SELL row to the ledger, with the crystallized realized P/L.
+function insertSellLedger(db, { userId, symbol, type, quantity, price, proceeds, realizedPl, executedAt }) {
+    return dbRun(db,
+        `INSERT INTO transactions
+            (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, realized_pl, created_at, executed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE(?, CURRENT_TIMESTAMP))`,
+        [userId, symbol, type, 'sell', quantity, price, proceeds, getTransactionCurrency(symbol), realizedPl, executedAt || null]);
+}
+
 // @desc    Get user's complete portfolio
 // @route   GET /api/portfolio
 exports.getPortfolio = (req, res) => {
@@ -67,189 +167,65 @@ exports.getPortfolio = (req, res) => {
 
 // @desc    Add a new asset to user's portfolio
 // @route   POST /api/portfolio
-exports.addAsset = (req, res) => {
+// Thin wrapper over the shared position/ledger operations. Buying more of a held
+// asset merges into it (weighted-average). A ledger failure is logged but doesn't
+// fail the buy — the position summary the UI reads is already updated.
+exports.addAsset = async (req, res) => {
     const { symbol, quantity, purchase } = req.body;
     const type = req.body.type || 'stock';
     const userId = req.user.id;
     const db = getConnection();
 
     // executed_at is the actual trade time. Normal buys don't send one, so it
-    // falls back (via COALESCE) to CURRENT_TIMESTAMP — the same value the
-    // created_at default resolves to within this statement, so it stays identical
-    // to the audit stamp and nothing changes for existing clients. A future import
-    // path can pass an explicit ISO trade time here without ever touching created_at.
+    // falls back (via COALESCE) to CURRENT_TIMESTAMP. The import path passes an
+    // explicit ISO trade time here without ever touching created_at.
     const executedAt = (typeof req.body.executedAt === 'string' && req.body.executedAt.trim())
         ? req.body.executedAt.trim()
         : null;
 
-    // Append the immutable buy to the transaction ledger (this buy's own quantity
-    // and unit price — NOT the merged position), then reply with the position
-    // result. A ledger failure is logged but doesn't fail the buy, since the
-    // position summary (what the UI reads) is already updated.
-    const recordThenRespond = (positionResult) => {
-        db.run(
-            `INSERT INTO transactions
-                (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, created_at, executed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE(?, CURRENT_TIMESTAMP))`,
-            [userId, symbol, type, 'buy', quantity, purchase, quantity * purchase, getTransactionCurrency(symbol), executedAt],
-            (txErr) => {
-                if (txErr) console.error('Transaction ledger insert error:', txErr);
-                return res.json(positionResult);
-            }
-        );
-    };
-
-    // Buying more of an asset already held is a valid action, not a duplicate.
-    // If the user already holds this symbol+type, merge the buy into the existing
-    // position: sum the quantity and recompute the weighted-average purchase price.
-    // Scoped by user_id, so other users' identical symbols are untouched; a
-    // different `type` for the same symbol is a separate position.
-    db.get(
-        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
-        [userId, symbol, type],
-        (selErr, existing) => {
-            if (selErr) {
-                console.error('Portfolio lookup error:', selErr);
-                return res.status(500).json({ message: 'Portföy eklenemedi' });
-            }
-
-            if (existing) {
-                const totalQuantity = existing.quantity + quantity;
-                const avgPrice = ((existing.purchase_price * existing.quantity) + (purchase * quantity)) / totalQuantity;
-                db.run(
-                    'UPDATE portfolios SET quantity = ?, purchase_price = ? WHERE id = ? AND user_id = ?',
-                    [totalQuantity, avgPrice, existing.id, userId],
-                    (updErr) => {
-                        if (updErr) {
-                            console.error('Portfolio update error:', updErr);
-                            return res.status(500).json({ message: 'Portföy güncellenemedi' });
-                        }
-                        return recordThenRespond({ id: existing.id, merged: true, quantity: totalQuantity, purchase_price: avgPrice });
-                    }
-                );
-                return;
-            }
-
-            db.run(
-                'INSERT INTO portfolios (user_id, symbol, quantity, purchase_price, type) VALUES (?, ?, ?, ?, ?)',
-                [userId, symbol, quantity, purchase, type],
-                function (insErr) {
-                    if (insErr) {
-                        // The UNIQUE index still guards against a concurrent insert
-                        // racing the lookup above.
-                        if (insErr.code === 'SQLITE_CONSTRAINT') {
-                            return res.status(409).json({ message: 'Bu varlık az önce eklendi, lütfen tekrar deneyin' });
-                        }
-                        console.error('Portfolio insert error:', insErr);
-                        return res.status(500).json({ message: 'Portföy eklenemedi' });
-                    }
-                    return recordThenRespond({ id: this.lastID });
-                }
-            );
+    try {
+        const positionResult = await mergeOrInsertPosition(db, userId, { symbol, quantity, purchase, type });
+        try {
+            await insertBuyLedger(db, { userId, symbol, type, quantity, purchase, executedAt });
+        } catch (txErr) {
+            console.error('Transaction ledger insert error:', txErr);
         }
-    );
+        return res.json(positionResult);
+    } catch (err) {
+        if (err instanceof BusinessError) return res.status(err.status).json({ message: err.message });
+        console.error('Portfolio add error:', err);
+        return res.status(500).json({ message: 'Portföy eklenemedi' });
+    }
 };
 
 // @desc    Sell part or all of an existing position
 // @route   POST /api/portfolio/sell
-exports.sellAsset = (req, res) => {
+// Thin wrapper over applySellPosition (oversell rules + realized-P/L math) and the
+// ledger append. Mirrors addAsset: a ledger failure is logged but doesn't fail the
+// request, since the position is already updated.
+exports.sellAsset = async (req, res) => {
     const { symbol, quantity, price } = req.body;
     const type = req.body.type || 'stock';
     const userId = req.user.id;
     const db = getConnection();
 
-    // Float tolerance so "sell exactly all" isn't defeated by representation noise
-    // (e.g. an owned quantity stored as 79.99999999 after prior averaging).
-    const EPS = 1e-9;
-
-    // Optional explicit trade time (see addAsset); normal sells fall back to now.
     const executedAt = (typeof req.body.executedAt === 'string' && req.body.executedAt.trim())
         ? req.body.executedAt.trim()
         : null;
 
-    db.get(
-        'SELECT id, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ? AND type = ?',
-        [userId, symbol, type],
-        (selErr, position) => {
-            if (selErr) {
-                console.error('Sell lookup error:', selErr);
-                return res.status(500).json({ message: 'Satış işlemi başarısız' });
-            }
-            // Business rule: cannot sell an asset that isn't held.
-            if (!position) {
-                return res.status(404).json({ message: 'Satılacak varlık portföyünüzde bulunamadı' });
-            }
-            // Business rule: cannot sell more than owned.
-            if (quantity > position.quantity + EPS) {
-                return res.status(400).json({ message: `Sahip olduğunuzdan fazlasını satamazsınız (mevcut miktar: ${position.quantity})` });
-            }
-
-            // Average cost is a fixed fact of the position — a sell NEVER recomputes
-            // it. Realized P/L crystallizes against that cost at this instant and is
-            // persisted immutably on the ledger row.
-            const avgCost = position.purchase_price;
-            const proceeds = quantity * price;
-            const realizedPl = quantity * (price - avgCost);
-            const remaining = position.quantity - quantity;
-            const fullSell = remaining <= EPS;
-
-            // Append the immutable SELL to the append-only ledger, then reply. Mirrors
-            // addAsset: the position (what the UI reads) is already updated, so a
-            // ledger failure is logged but doesn't fail the request.
-            const recordThenRespond = (positionResult) => {
-                db.run(
-                    `INSERT INTO transactions
-                        (user_id, symbol, asset_type, transaction_type, quantity, unit_price, total_amount, currency, realized_pl, created_at, executed_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE(?, CURRENT_TIMESTAMP))`,
-                    [userId, symbol, type, 'sell', quantity, price, proceeds, getTransactionCurrency(symbol), realizedPl, executedAt],
-                    (txErr) => {
-                        if (txErr) console.error('Sell ledger insert error:', txErr);
-                        return res.json(positionResult);
-                    }
-                );
-            };
-
-            if (fullSell) {
-                // Full exit: remove the position entirely. The guarded WHERE makes the
-                // delete atomic against concurrent/duplicate sells — it only fires if
-                // the row still holds the quantity we priced, otherwise changes === 0.
-                db.run(
-                    'DELETE FROM portfolios WHERE id = ? AND user_id = ? AND quantity >= ?',
-                    [position.id, userId, quantity - EPS],
-                    function (delErr) {
-                        if (delErr) {
-                            console.error('Sell (full) delete error:', delErr);
-                            return res.status(500).json({ message: 'Satış işlemi başarısız' });
-                        }
-                        if (this.changes === 0) {
-                            return res.status(409).json({ message: 'Pozisyon değişti, lütfen tekrar deneyin' });
-                        }
-                        return recordThenRespond({ id: position.id, sold: quantity, remaining: 0, closed: true, realized_pl: realizedPl, purchase_price: avgCost });
-                    }
-                );
-                return;
-            }
-
-            // Partial sell: decrement quantity, leaving purchase_price (the weighted
-            // average cost) untouched. The `quantity >= ?` guard prevents overselling
-            // under a concurrent/duplicate request; changes === 0 means the position
-            // no longer holds enough and we refuse rather than go negative.
-            db.run(
-                'UPDATE portfolios SET quantity = quantity - ? WHERE id = ? AND user_id = ? AND quantity >= ?',
-                [quantity, position.id, userId, quantity],
-                function (updErr) {
-                    if (updErr) {
-                        console.error('Sell (partial) update error:', updErr);
-                        return res.status(500).json({ message: 'Satış işlemi başarısız' });
-                    }
-                    if (this.changes === 0) {
-                        return res.status(409).json({ message: 'Pozisyon değişti, lütfen tekrar deneyin' });
-                    }
-                    return recordThenRespond({ id: position.id, sold: quantity, remaining, closed: false, realized_pl: realizedPl, purchase_price: avgCost });
-                }
-            );
+    try {
+        const { positionResult, realizedPl, proceeds } = await applySellPosition(db, userId, { symbol, quantity, price, type });
+        try {
+            await insertSellLedger(db, { userId, symbol, type, quantity, price, proceeds, realizedPl, executedAt });
+        } catch (txErr) {
+            console.error('Sell ledger insert error:', txErr);
         }
-    );
+        return res.json(positionResult);
+    } catch (err) {
+        if (err instanceof BusinessError) return res.status(err.status).json({ message: err.message });
+        console.error('Sell error:', err);
+        return res.status(500).json({ message: 'Satış işlemi başarısız' });
+    }
 };
 
 // @desc    Get the user's transaction history (append-only ledger)
@@ -281,6 +257,106 @@ exports.getTransactions = (req, res) => {
         res.json(rows);
     });
 };
+// Serialize imports so one file's BEGIN…COMMIT transaction cannot interleave with
+// another import on the shared single connection. A tiny promise-chain mutex.
+let importLock = Promise.resolve();
+function acquireImportLock() {
+    let release;
+    const prev = importLock;
+    importLock = new Promise((resolve) => { release = resolve; });
+    return prev.then(() => release);
+}
+
+// @desc    Validate + import a CSV transaction history, replaying each row through
+//          the SAME buy/sell logic in chronological (executed_at) order.
+// @route   POST /api/portfolio/import   body: { rows: [...], confirm: boolean }
+// The whole file is validated first (nothing partial). With confirm !== true the
+// replay runs inside a transaction that is ROLLED BACK — a dry run that returns a
+// preview of the outcome. With confirm === true the transaction is COMMITTED. Any
+// business failure (e.g. overselling) rolls everything back: import is all-or-nothing.
+exports.importTransactions = async (req, res) => {
+    const db = getConnection();
+    const userId = req.user.id;
+    const confirm = !!(req.body && req.body.confirm === true);
+
+    const { valid, errors, normalized } = validateImportRows(req.body && req.body.rows);
+    if (!valid) {
+        return res.status(400).json({ message: 'CSV doğrulaması başarısız', valid: false, errors });
+    }
+
+    const release = await acquireImportLock();
+    try {
+        await dbRun(db, 'BEGIN IMMEDIATE');
+
+        // Before the replay writes any ledger rows, sample the user's existing
+        // ledger to warn (in the preview) when this file re-imports transactions
+        // that are already recorded. This does not deduplicate — importing anyway
+        // is allowed; it only surfaces that duplicates would be created.
+        const existingLedger = await dbAll(db,
+            'SELECT executed_at, symbol, transaction_type, quantity, unit_price FROM transactions WHERE user_id = ?', [userId]);
+        const duplicates = countDuplicateRows(normalized, existingLedger);
+
+        let buys = 0, sells = 0, realizedTotalTRY = 0;
+        try {
+            for (const row of normalized) {
+                if (row.transactionType === 'buy') {
+                    await mergeOrInsertPosition(db, userId, { symbol: row.symbol, quantity: row.quantity, purchase: row.unitPrice, type: row.type });
+                    await insertBuyLedger(db, { userId, symbol: row.symbol, type: row.type, quantity: row.quantity, purchase: row.unitPrice, executedAt: row.executedAt });
+                    buys++;
+                } else {
+                    const { realizedPl, proceeds } = await applySellPosition(db, userId, { symbol: row.symbol, quantity: row.quantity, price: row.unitPrice, type: row.type });
+                    await insertSellLedger(db, { userId, symbol: row.symbol, type: row.type, quantity: row.quantity, price: row.unitPrice, proceeds, realizedPl, executedAt: row.executedAt });
+                    sells++;
+                    if (getTransactionCurrency(row.symbol) === 'TRY') realizedTotalTRY += realizedPl;
+                }
+            }
+        } catch (rowErr) {
+            await dbRun(db, 'ROLLBACK').catch(() => {});
+            const status = rowErr instanceof BusinessError ? 400 : 500;
+            return res.status(status).json({
+                message: `İçe aktarma durduruldu: ${rowErr.message || 'işlem uygulanamadı'}`,
+                valid: false,
+                imported: 0,
+                errors: [{ message: rowErr.message || 'İşlem uygulanamadı' }]
+            });
+        }
+
+        // Resulting positions for the affected symbols, read inside the transaction
+        // (before rollback/commit) so the preview reflects the post-import state.
+        const symbols = [...new Set(normalized.map(r => r.symbol))];
+        const positions = [];
+        for (const sym of symbols) {
+            const rows = await dbAll(db, 'SELECT symbol, type, quantity, purchase_price FROM portfolios WHERE user_id = ? AND symbol = ?', [userId, sym]);
+            positions.push(...rows);
+        }
+
+        const summary = {
+            total: normalized.length,
+            buys,
+            sells,
+            symbols: symbols.length,
+            duplicates,
+            realizedTotalTRY,
+            from: normalized[0].executedAt,
+            to: normalized[normalized.length - 1].executedAt,
+            positions
+        };
+
+        if (!confirm) {
+            await dbRun(db, 'ROLLBACK');
+            return res.json({ preview: true, valid: true, summary });
+        }
+        await dbRun(db, 'COMMIT');
+        return res.json({ preview: false, valid: true, imported: normalized.length, summary });
+    } catch (err) {
+        await dbRun(db, 'ROLLBACK').catch(() => {});
+        console.error('Import error:', err);
+        return res.status(500).json({ message: 'İçe aktarma başarısız' });
+    } finally {
+        release();
+    }
+};
+
 // @desc    Remove an asset from portfolio
 // @route   DELETE /api/portfolio/:id
 exports.deleteAsset = (req, res) => {
