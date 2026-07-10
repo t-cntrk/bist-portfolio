@@ -418,8 +418,9 @@
                     <select id="txSymbolFilter" class="modern-select tx-symbol-filter" aria-label="Varlık filtresi">
                         <option value="all" data-i18n="tx.filterAllSymbols">Tüm Varlıklar</option>
                     </select>
-                    <!-- Exports the full ledger (not the filtered view); wired in transactions.js -->
+                    <!-- Import (CSV) + exports of the full ledger; wired in transactions.js -->
                     <div class="tx-export-actions">
+                        <button type="button" id="txImportBtn" class="tx-export-btn tx-export-btn--import" data-i18n="tx.import" aria-label="İşlem geçmişini CSV'den içe aktar">CSV İçe Aktar</button>
                         <button type="button" id="txExportBtn" class="tx-export-btn" data-i18n="tx.export" aria-label="İşlem geçmişini CSV olarak indir">CSV İndir</button>
                         <button type="button" id="txExportExcelBtn" class="tx-export-btn tx-export-btn--excel" data-i18n="tx.exportExcel" aria-label="İşlem geçmişini Excel olarak indir">Excel İndir</button>
                     </div>

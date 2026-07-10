@@ -27,6 +27,45 @@ export function buildCsv(headers, rows) {
     return '﻿' + lines.join('\r\n');
 }
 
+// Parse a CSV document (RFC 4180) into an array of rows, each an array of string
+// fields. Handles quoted fields with embedded commas, quotes ("" → "), and
+// newlines; accepts CRLF or LF line endings and strips a leading UTF-8 BOM. The
+// inverse of buildCsv, reused by the CSV import path.
+export function parseCsv(text) {
+    const s = (typeof text === 'string' && text.charCodeAt(0) === 0xFEFF) ? text.slice(1) : String(text || '');
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQuotes) {
+            if (c === '"') {
+                if (s[i + 1] === '"') { field += '"'; i++; } // escaped quote
+                else inQuotes = false;                        // closing quote
+            } else {
+                field += c;                                   // literal (incl. , and \n)
+            }
+        } else if (c === '"') {
+            inQuotes = true;
+        } else if (c === ',') {
+            row.push(field); field = '';
+        } else if (c === '\n') {
+            row.push(field); rows.push(row); row = []; field = '';
+        } else if (c === '\r') {
+            // ignore; the paired \n (or EOF) ends the row
+        } else {
+            field += c;
+        }
+    }
+    // Flush the final field/row when the file doesn't end with a newline.
+    if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+
+    // Drop blank rows (e.g. a trailing newline yielding a single empty field).
+    return rows.filter(r => !(r.length === 1 && r[0] === ''));
+}
+
 // Trigger a client-side download of `content` as `filename` without a page
 // reload. Uses an object URL + a transient anchor, revoked immediately after.
 export function downloadCsv(filename, content) {
